@@ -62,23 +62,18 @@ An agent contains the core runtime information needed to execute a model request
  Tools are strongly typed C# classes. A tool declares its input and output models, and Runiq executes it when the model requests a function call.
 
 ```csharp
-\[RuniqTool(
-
-    name: "weather",
-
-    description: "Gets current weather information for a city.")]
+[RuniqTool(name: "weather",
+            description: "Gets current weather information for a city.")]
 
 public sealed class WeatherTool : IRuniqTool<WeatherInput, WeatherOutput>
 
 {
     public Task<WeatherOutput> ExecuteAsync(
-        WeatherInput input,
-        CancellationToken cancellationToken = default)
+        WeatherInput input,  CancellationToken cancellationToken = default)
 
     {
 
         ArgumentNullException.ThrowIfNull(input);
-
         if (string.IsNullOrWhiteSpace(input.City))
         {
 
@@ -99,9 +94,7 @@ public sealed class WeatherTool : IRuniqTool<WeatherInput, WeatherOutput>
 }
 
 public sealed record WeatherInput(string City);
-
 public sealed record WeatherOutput(
-
     string City,
     int TemperatureCelsius,
     string Condition,
@@ -133,25 +126,15 @@ The dashboard provides:
 ## Example Tool Flow
  The current agent tool flow works as follows:
 
-
 1.The user sends a message from the Dashboard playground.
-
 2.The frontend opens a streaming chat request.
-
 3.Runiq sends the agent instructions, model, and tool schema to the provider.
-
 4.The model emits a function call.
-
 5.Runiq parses the function call.
-
 6.Runiq executes the matching strongly typed .NET tool.
-
 7.The tool result is streamed to the UI as a typed tool event.
-
 8.Runiq sends the tool output back to the model using continuation.
-
 9.The model generates the final assistant response.
-
 10.The Dashboard renders the tool call as a collapsible card and displays the final response below it.
 
 
@@ -192,18 +175,18 @@ The frontend does not append raw tool event payloads into the assistant message.
 
 ## Running Locally
  Build the solution:
-``bash
+```bash
 dotnet build Runiq.Net.slnx
 ```
  Run tests:
 
-``bash
+```bash
 dotnet test Runiq.Net.slnx
 ```
 
 ## Build the Dashboard client:
 
-``bash
+```bash
 cd src/Runiq.Dashboard.Client
 npm install
 npm run build
@@ -211,8 +194,8 @@ npm run build
 
 ## Run the sample application:
 
-``bash
-dotnet run --project samples/SampleApp
+```bash
+    dotnet run --project samples/SampleApp
 ```
 ## Open the Dashboard:
 
@@ -223,13 +206,13 @@ http://localhost:5241/dashboard
  Before committing runtime or dashboard changes, run:
 
 
-``bash
+```bash
 dotnet test Runiq.Net.slnx
 ```
 
 # And for Dashboard client changes:
 
-``bash
+```bash
 cd src/Runiq.Dashboard.Client
 npm run build
 ```
