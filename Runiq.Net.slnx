@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/SampleApp/SampleApp.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Runiq.Agent/Runiq.Agents.csproj" />
+    <Project Path="src/Runiq.Core/Runiq.Core.csproj" />
+  </Folder>
+</Solution>
