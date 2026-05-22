@@ -90,7 +90,7 @@ public sealed class AgentExecutionRuntime
             {
                 case AgentExecutionEventKind.AssistantDelta:
                     messageBuilder.Append(executionEvent.Content);
-                    break;
+                    break; 
 
                 case AgentExecutionEventKind.Failed:
                     return AgentExecutionResult.Failure(
