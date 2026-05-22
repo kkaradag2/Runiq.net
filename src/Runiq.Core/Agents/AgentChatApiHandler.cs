@@ -4,6 +4,7 @@ using Runiq.Agents;
 using Runiq.Agents.Tools;
 using Runiq.Agents.Runtime;
 
+
 namespace Runiq.Core.Agents;
 
 /// <summary>
@@ -37,10 +38,11 @@ public sealed class AgentChatApiHandler
         if (string.IsNullOrWhiteSpace(request.Message))
         {
             return Results.BadRequest(new AgentChatResponse(
-                IsSuccess: false,
-                Message: null,
-                ErrorCode: "MessageRequired",
-                ErrorMessage: "Message is required."));
+             IsSuccess: false,
+             Message: null,
+             ErrorCode: "MessageRequired",
+             ErrorMessage: "Message is required.",
+             Steps: []));
         }
 
         if (request.ResponseMode == AgentChatResponseMode.Stream)
@@ -64,47 +66,25 @@ public sealed class AgentChatApiHandler
     }
 
     private async Task<AgentExecutionResult> ExecuteToResultAsync(
-    HttpContext httpContext,
-    string agentId,
-    string message,
-    CancellationToken cancellationToken)
+        HttpContext httpContext,
+        string agentId,
+        string message,
+        CancellationToken cancellationToken)
     {
-        var builder = new System.Text.StringBuilder();
+        var resultBuilder = new AgentExecutionResultBuilder();
         var toolInvoker = new AgentToolInvoker(httpContext.RequestServices);
 
         await foreach (var executionEvent in agentRuntime.ExecuteStreamAsync(
-                             agentId,
-                            message,
-                            toolInvoker,
-                            cancellationToken))
+                           agentId,
+                           message,
+                           toolInvoker,
+                           cancellationToken))
         {
-            switch (executionEvent.Kind)
-            {
-                case AgentExecutionEventKind.AssistantDelta:
-                    if (!string.IsNullOrEmpty(executionEvent.Content))
-                    {
-                        builder.Append(executionEvent.Content);
-                    }
-
-                    break;
-
-                case AgentExecutionEventKind.Failed:
-                    return AgentExecutionResult.Failure(
-                        errorCode: executionEvent.ErrorCode ?? "AgentExecutionFailed",
-                        errorMessage:
-                        executionEvent.ErrorMessage ??
-                        executionEvent.Content ??
-                        "Agent execution failed.");
-
-                case AgentExecutionEventKind.Completed:
-                    break;
-            }
+            resultBuilder.Apply(executionEvent);
         }
 
-        return AgentExecutionResult.Success(builder.ToString());
+        return resultBuilder.Build();
     }
-
-
 
     private static AgentChatResponse ToChatResponse(AgentExecutionResult result)
     {
@@ -112,7 +92,10 @@ public sealed class AgentChatApiHandler
             IsSuccess: result.IsSuccess,
             Message: result.Message,
             ErrorCode: result.ErrorCode,
-            ErrorMessage: result.ErrorMessage);
+            ErrorMessage: result.ErrorMessage,
+            Steps: result.Steps
+                .Select(AgentChatExecutionStepResponse.FromExecutionStep)
+                .ToArray());
     }
 
     private  async Task WriteStreamAsync(
