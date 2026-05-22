@@ -26,10 +26,10 @@ jobs:
         run: dotnet restore Runiq.Net.slnx
 
       - name: Build
-        run: dotnet build Runiq.Net.slnx --no-restore -v:minimal
+        run: dotnet build Runiq.Net.slnx --no-restore -c Release -v:minimal
 
       - name: Test
-        run: dotnet test Runiq.Net.slnx --no-build -v:minimal
+        run: dotnet test Runiq.Net.slnx --no-build -c Release -v:minimal
 
       - name: Pack
-        run: dotnet pack Runiq.Net.slnx --no-build -o artifacts/packages
+        run: dotnet pack Runiq.Net.slnx --no-build -c Release -o artifacts/packages
