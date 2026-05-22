@@ -120,7 +120,7 @@ namespace Runiq.Agents.Providers.OpenAI
             ArgumentNullException.ThrowIfNull(agent);
             ArgumentNullException.ThrowIfNull(endpoint);
 
-            var startedAt = Stopwatch.GetTimestamp();
+
 
             var requestUrl = BuildChatCompletionsUrl(endpoint);
 
@@ -140,9 +140,9 @@ namespace Runiq.Agents.Providers.OpenAI
                     Messages:
                     [
                         new OpenAIChatMessage("system", agent.Instructions),
-                new OpenAIChatMessage("user", input)
+                        new OpenAIChatMessage("user", input)
                     ]),
-                options: JsonOptions);
+                    options: JsonOptions);
 
     
             using var response = await httpClient.SendAsync(
@@ -150,15 +150,15 @@ namespace Runiq.Agents.Providers.OpenAI
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken);
 
-   
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-                yield return AgentExecutionEvent.Failed(
-                           errorCode: "ProviderRequestFailed",
-                           errorMessage: $"Provider request failed with status code {(int)response.StatusCode}. {errorBody}");
 
-                yield return AgentExecutionEvent.Completed();
+                yield return AgentExecutionEvent.Failed(
+                    errorCode: "ProviderRequestFailed",
+                    errorMessage: $"Provider request failed with status code {(int)response.StatusCode}. {errorBody}");
+
                 yield break;
             }
 
