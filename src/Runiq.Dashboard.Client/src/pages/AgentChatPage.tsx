@@ -9,7 +9,9 @@ import { getDashboardBasePath } from '../dashboardConfig';
 import type {
   AgentChatMessage,
   AgentChatMethod,
+  AgentChatResult,
   AgentChatStreamEvent,
+  AgentToolCall,
 } from '../types/agentChat';
 
 type AgentChatPageProps = {
@@ -107,6 +109,27 @@ function createFallbackToolCallId(): string {
     : `tool-${Date.now()}-${Math.random()}`;
 }
 
+function createAssistantMessageFromResult(result: AgentChatResult): AgentChatMessage {
+  return {
+    ...createMessage('assistant', result.message ?? ''),
+    toolCalls: mapResultStepsToToolCalls(result),
+  };
+}
+
+function mapResultStepsToToolCalls(result: AgentChatResult): AgentToolCall[] {
+  return (result.steps ?? [])
+    .filter((step) => step.kind === 'tool_call')
+    .map((step) => ({
+      id: step.toolCallId ?? createFallbackToolCallId(),
+      name: step.toolName ?? 'tool',
+      status: step.status,
+      argumentsJson: step.argumentsJson ?? undefined,
+      outputJson: step.outputJson ?? undefined,
+      errorCode: step.errorCode ?? undefined,
+      errorMessage: step.errorMessage ?? undefined,
+    }));
+}
+
 export function AgentChatPage({ agentId }: AgentChatPageProps) {
   const [agent, setAgent] = useState<AgentMetadata | null>(null);
   const [isLoading, setLoading] = useState(true);
@@ -170,16 +193,16 @@ export function AgentChatPage({ agentId }: AgentChatPageProps) {
 
     try {
       if (chatMethod === 'result') {
-        const assistantResponse = await sendAgentMessage({
-          basePath,
-          agentId,
-          message,
-        });
+          const assistantResponse = await sendAgentMessage({
+            basePath,
+            agentId,
+            message,
+          });
 
-        setMessages((current) => [
-          ...current,
-          createMessage('assistant', assistantResponse),
-        ]);
+          setMessages((current) => [
+            ...current,
+            createAssistantMessageFromResult(assistantResponse),
+          ]);
 
         return;
       }

@@ -39,3 +39,36 @@ export type AgentChatStreamEvent = {
   errorCode?: string | null;
   errorMessage?: string | null;
 };
+
+export type AgentChatExecutionStepKind =
+  | 'tool_call'
+  | 'final_answer'
+  | 'error';
+
+export type AgentChatExecutionStepStatus =
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+export type AgentChatExecutionStep = {
+  index: number;
+  kind: AgentChatExecutionStepKind;
+  content?: string | null;
+  toolCallId?: string | null;
+  toolName?: string | null;
+  argumentsJson?: string | null;
+  outputJson?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  status: AgentChatExecutionStepStatus;
+  startedAt?: string | null;
+  completedAt?: string | null;
+};
+
+export type AgentChatResult = {
+  isSuccess?: boolean;
+  message?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  steps?: AgentChatExecutionStep[];
+};
