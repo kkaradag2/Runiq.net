@@ -7,7 +7,7 @@ namespace Runiq.Core.Validation;
 /// <summary>
 /// Runiq server kayıtlarının projeler arası bütünlüğünü doğrular.
 /// </summary>
-internal static class RuniqServerRegistrationValidator
+internal static class RuniqServerRegistrationValidatorTests
 {
     /// <summary>
     /// Agent, tool ve context space kayıtlarının birlikte tutarlı olup olmadığını doğrular.
