@@ -10,7 +10,16 @@ public sealed record AgentMetadataDto(
     string Model,
     string ReasoningEffort,
     string Verbosity,
-    IReadOnlyList<AgentToolMetadataDto> Tools);
+    IReadOnlyList<AgentToolMetadataDto> Tools,
+    IReadOnlyList<AgentContextSpaceMetadataDto> ContextSpaces);
+
+/// <summary>
+/// Studio tarafında agent'a bağlı context space metadata bilgisini temsil eder.
+/// </summary>
+public sealed record AgentContextSpaceMetadataDto(
+    string Id,
+    string Name,
+    string? Description);
 
 /// <summary>
 /// Studio tarafında gösterilecek agent tool metadata bilgisini temsil eder.
@@ -40,5 +49,31 @@ public sealed record ToolMetadataDto(
 /// Bir tool'un bağlı olduğu agent bilgisini temsil eder.
 /// </summary>
 public sealed record ToolAttachedAgentMetadataDto(
+    string Id,
+    string Name);
+
+/// <summary>
+/// Studio tarafında gösterilecek context space metadata bilgisini temsil eder.
+/// </summary>
+public sealed record ContextSpaceMetadataDto(
+    string Id,
+    string Name,
+    string? Description,
+    IReadOnlyList<ContextSpaceSourceMetadataDto> Sources,
+    IReadOnlyList<ContextSpaceAttachedAgentMetadataDto> AttachedAgents);
+
+/// <summary>
+/// Context space içinde tanımlı bilgi kaynağı metadata bilgisini temsil eder.
+/// </summary>
+public sealed record ContextSpaceSourceMetadataDto(
+    string Id,
+    string Name,
+    string Kind,
+    string? Description);
+
+/// <summary>
+/// Bir context space'e bağlı agent bilgisini temsil eder.
+/// </summary>
+public sealed record ContextSpaceAttachedAgentMetadataDto(
     string Id,
     string Name);
