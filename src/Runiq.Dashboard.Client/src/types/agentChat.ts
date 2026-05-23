@@ -19,6 +19,7 @@ export type AgentChatMessage = {
   role: AgentChatMessageRole;
   content: string;
   toolCalls?: AgentToolCall[];
+  isStreaming?: boolean;
 };
 
 export type AgentChatStreamEventType =

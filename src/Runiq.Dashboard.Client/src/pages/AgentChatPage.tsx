@@ -37,6 +37,7 @@ function applyStreamEvent(
     return {
       ...message,
       content: message.content + (event.content ?? ''),
+      isStreaming: true,
     };
   }
 
@@ -46,6 +47,7 @@ function applyStreamEvent(
 
     return {
       ...message,
+      isStreaming: true,
       toolCalls: [
         ...(message.toolCalls ?? []),
         {
@@ -61,6 +63,7 @@ function applyStreamEvent(
   if (event.type === 'tool_call_completed') {
     return {
       ...message,
+      isStreaming: true,
       toolCalls: (message.toolCalls ?? []).map((toolCall) =>
         toolCall.id === event.toolCallId
           ? {
@@ -76,6 +79,7 @@ function applyStreamEvent(
   if (event.type === 'tool_call_failed') {
     return {
       ...message,
+      isStreaming: true,
       toolCalls: (message.toolCalls ?? []).map((toolCall) =>
         toolCall.id === event.toolCallId
           ? {
@@ -89,14 +93,18 @@ function applyStreamEvent(
     };
   }
 
+  if (event.type === 'completed') {
+    return {
+      ...message,
+      isStreaming: false,
+    };
+  }
+
   if (event.type === 'failed') {
     return {
       ...message,
-      role: 'error',
-      content:
-        event.errorMessage ??
-        event.content ??
-        'Agent execution failed.',
+      isStreaming: false,
+      content: event.errorMessage ?? event.content ?? 'Agent execution failed.',
     };
   }
 
@@ -112,6 +120,7 @@ function createFallbackToolCallId(): string {
 function createAssistantMessageFromResult(result: AgentChatResult): AgentChatMessage {
   return {
     ...createMessage('assistant', result.message ?? ''),
+    isStreaming: false,
     toolCalls: mapResultStepsToToolCalls(result),
   };
 }
@@ -193,40 +202,52 @@ export function AgentChatPage({ agentId }: AgentChatPageProps) {
 
     try {
       if (chatMethod === 'result') {
-          const assistantResponse = await sendAgentMessage({
-            basePath,
-            agentId,
-            message,
-          });
+        const assistantResponse = await sendAgentMessage({
+          basePath,
+          agentId,
+          message,
+        });
 
-          setMessages((current) => [
-            ...current,
-            createAssistantMessageFromResult(assistantResponse),
-          ]);
+        setMessages((current) => [
+          ...current,
+          createAssistantMessageFromResult(assistantResponse),
+        ]);
 
         return;
       }
 
-      const assistantMessage = createMessage('assistant', '');
+      const assistantMessage: AgentChatMessage = {
+        ...createMessage('assistant', ''),
+        isStreaming: true,
+        toolCalls: [],
+      };
 
       setMessages((current) => [...current, assistantMessage]);
 
-      await streamAgentMessage(
-        {
-          basePath,
-          agentId,
-          message,
-        },
-        (event) => {
-          setMessages((current) =>
-            current.map((item) =>
-              item.id === assistantMessage.id
-                ? applyStreamEvent(item, event)
-                : item,
-            ),
-          );
-        },
-      );
+await streamAgentMessage(
+  {
+    basePath,
+    agentId,
+    message,
+  },
+  (event) => {
+    setMessages((current) =>
+      current.map((item) =>
+        item.id === assistantMessage.id
+          ? applyStreamEvent(item, event)
+          : item,
+      ),
+    );
+  },
+);
+
+setMessages((current) =>
+  current.map((item) =>
+    item.id === assistantMessage.id
+      ? { ...item, isStreaming: false }
+      : item,
+  ),
+);
     } catch (error) {
       setMessages((current) => [
         ...current,
