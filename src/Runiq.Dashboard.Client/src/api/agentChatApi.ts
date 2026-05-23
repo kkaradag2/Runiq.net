@@ -1,4 +1,4 @@
-import type { AgentChatStreamEvent } from '../types/agentChat';
+import type { AgentChatResult, AgentChatStreamEvent } from '../types/agentChat';
 
 type SendAgentMessageRequest = {
   basePath: string;
@@ -6,12 +6,7 @@ type SendAgentMessageRequest = {
   message: string;
 };
 
-type AgentChatResponse = {
-  isSuccess?: boolean;
-  message?: string | null;
-  errorCode?: string | null;
-  errorMessage?: string | null;
-};
+
 
 function trimTrailingSlash(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
@@ -25,7 +20,7 @@ export async function sendAgentMessage({
   basePath,
   agentId,
   message,
-}: SendAgentMessageRequest): Promise<string> {
+}: SendAgentMessageRequest): Promise<AgentChatResult> {
   const response = await fetch(buildAgentChatUrl(basePath, agentId), {
     method: 'POST',
     headers: {
@@ -37,7 +32,7 @@ export async function sendAgentMessage({
     }),
   });
 
-  const payload = (await response.json()) as AgentChatResponse;
+const payload = (await response.json()) as AgentChatResult;
 
   if (!response.ok || payload.isSuccess === false) {
     throw new Error(
@@ -51,7 +46,7 @@ export async function sendAgentMessage({
     throw new Error('Agent response was empty.');
   }
 
-  return payload.message;
+  return payload;
 }
 
 export async function streamAgentMessage(

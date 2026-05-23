@@ -9,7 +9,9 @@ import { getDashboardBasePath } from '../dashboardConfig';
 import type {
   AgentChatMessage,
   AgentChatMethod,
+  AgentChatResult,
   AgentChatStreamEvent,
+  AgentToolCall,
 } from '../types/agentChat';
 
 type AgentChatPageProps = {
@@ -35,6 +37,7 @@ function applyStreamEvent(
     return {
       ...message,
       content: message.content + (event.content ?? ''),
+      isStreaming: true,
     };
   }
 
@@ -44,6 +47,7 @@ function applyStreamEvent(
 
     return {
       ...message,
+      isStreaming: true,
       toolCalls: [
         ...(message.toolCalls ?? []),
         {
@@ -59,6 +63,7 @@ function applyStreamEvent(
   if (event.type === 'tool_call_completed') {
     return {
       ...message,
+      isStreaming: true,
       toolCalls: (message.toolCalls ?? []).map((toolCall) =>
         toolCall.id === event.toolCallId
           ? {
@@ -74,6 +79,7 @@ function applyStreamEvent(
   if (event.type === 'tool_call_failed') {
     return {
       ...message,
+      isStreaming: true,
       toolCalls: (message.toolCalls ?? []).map((toolCall) =>
         toolCall.id === event.toolCallId
           ? {
@@ -87,14 +93,18 @@ function applyStreamEvent(
     };
   }
 
+  if (event.type === 'completed') {
+    return {
+      ...message,
+      isStreaming: false,
+    };
+  }
+
   if (event.type === 'failed') {
     return {
       ...message,
-      role: 'error',
-      content:
-        event.errorMessage ??
-        event.content ??
-        'Agent execution failed.',
+      isStreaming: false,
+      content: event.errorMessage ?? event.content ?? 'Agent execution failed.',
     };
   }
 
@@ -105,6 +115,28 @@ function createFallbackToolCallId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `tool-${Date.now()}-${Math.random()}`;
+}
+
+function createAssistantMessageFromResult(result: AgentChatResult): AgentChatMessage {
+  return {
+    ...createMessage('assistant', result.message ?? ''),
+    isStreaming: false,
+    toolCalls: mapResultStepsToToolCalls(result),
+  };
+}
+
+function mapResultStepsToToolCalls(result: AgentChatResult): AgentToolCall[] {
+  return (result.steps ?? [])
+    .filter((step) => step.kind === 'tool_call')
+    .map((step) => ({
+      id: step.toolCallId ?? createFallbackToolCallId(),
+      name: step.toolName ?? 'tool',
+      status: step.status,
+      argumentsJson: step.argumentsJson ?? undefined,
+      outputJson: step.outputJson ?? undefined,
+      errorCode: step.errorCode ?? undefined,
+      errorMessage: step.errorMessage ?? undefined,
+    }));
 }
 
 export function AgentChatPage({ agentId }: AgentChatPageProps) {
@@ -178,32 +210,44 @@ export function AgentChatPage({ agentId }: AgentChatPageProps) {
 
         setMessages((current) => [
           ...current,
-          createMessage('assistant', assistantResponse),
+          createAssistantMessageFromResult(assistantResponse),
         ]);
 
         return;
       }
 
-      const assistantMessage = createMessage('assistant', '');
+      const assistantMessage: AgentChatMessage = {
+        ...createMessage('assistant', ''),
+        isStreaming: true,
+        toolCalls: [],
+      };
 
       setMessages((current) => [...current, assistantMessage]);
 
-      await streamAgentMessage(
-        {
-          basePath,
-          agentId,
-          message,
-        },
-        (event) => {
-          setMessages((current) =>
-            current.map((item) =>
-              item.id === assistantMessage.id
-                ? applyStreamEvent(item, event)
-                : item,
-            ),
-          );
-        },
-      );
+await streamAgentMessage(
+  {
+    basePath,
+    agentId,
+    message,
+  },
+  (event) => {
+    setMessages((current) =>
+      current.map((item) =>
+        item.id === assistantMessage.id
+          ? applyStreamEvent(item, event)
+          : item,
+      ),
+    );
+  },
+);
+
+setMessages((current) =>
+  current.map((item) =>
+    item.id === assistantMessage.id
+      ? { ...item, isStreaming: false }
+      : item,
+  ),
+);
     } catch (error) {
       setMessages((current) => [
         ...current,
