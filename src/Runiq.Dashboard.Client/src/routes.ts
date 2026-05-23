@@ -12,7 +12,8 @@ export type DashboardRoute =
   | { page: 'workflows' }
   | { page: 'agent-chat'; agentId: string }
   | { page: 'tool-detail'; toolName: string }
-  | { page: 'context-spaces' };
+  | { page: 'context-spaces' }
+  | { page: 'context-space-detail'; contextSpaceId: string };
 
 export type DashboardRouteDefinition = {
   page: DashboardPage;
@@ -136,9 +137,16 @@ export function resolveDashboardRouteFromUrl(
     return { page: 'tools' };
   }
 
-  if (firstSegment === 'context-spaces') {
-    return { page: 'context-spaces' };
+if (firstSegment === 'context-spaces') {
+  if (segments[1]) {
+    return {
+      page: 'context-space-detail',
+      contextSpaceId: decodeURIComponent(segments[1]),
+    };
   }
+
+  return { page: 'context-spaces' };
+}
 
   if (firstSegment === 'workflows') {
     return { page: 'workflows' };
