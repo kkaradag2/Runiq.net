@@ -39,12 +39,18 @@ builder.Services.AddRuniqServer(opt =>
         Do not answer from memory when these tools are available.
         """,
         model: "openai/gpt-5",
-        apiKey: builder.Configuration["OpenAI:ApiKey"])
+        apiKey: openAiApiKey)
     .UseContextSpace("travel-planning")
     .AddTool<WeatherTool>()
     .AddTool<TripPlanTool>());
 
 
+    opt.AddAgent(new Agent(
+    id: "plain-agent",
+    name: "Plain Agent",
+    instructions: "You are a simple assistant. Answer clearly and briefly.",
+    model: "openai/gpt-5",
+    apiKey: openAiApiKey));
 
 });
 
