@@ -15,6 +15,8 @@ import { ToolCallCard } from './tool/ToolCallCard';
 
 import type {
   AgentChatMessage,
+  AgentContextSearchSummary,
+  AgentLoadedSkill,
   AgentProvidedContext,
   AgentSourceSearchResult,
 } from '../../types/agentChat';
@@ -81,10 +83,11 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
   const [copied, setCopied] = useState(false);
 
   const hasContext = Boolean(message.context);
+  const hasLoadedSkills = Boolean(message.loadedSkills?.length);
   const hasToolCalls = Boolean(message.toolCalls?.length);
   const hasContent = Boolean(message.content.trim());
+  const hasContextSearch = Boolean(message.contextSearchSummary);
   const hasSourceSearchResults = Boolean(message.sourceSearchResults?.length);
-  const attachedSourceCount = message.context?.sources.length ?? 0;
 
   const isAssistantStreaming =
     message.role === 'assistant' && message.isStreaming === true;
@@ -93,13 +96,15 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
     message.role === 'assistant' &&
     isAssistantStreaming &&
     !hasContext &&
+    !hasLoadedSkills &&
+    !hasContextSearch &&
     !hasSourceSearchResults &&
     !hasToolCalls;
 
   const showContextWaiting =
     message.role === 'assistant' &&
     isAssistantStreaming &&
-    (hasContext || hasSourceSearchResults) &&
+    (hasContext || hasLoadedSkills || hasContextSearch || hasSourceSearchResults) &&
     !hasContent &&
     !hasToolCalls;
 
@@ -154,7 +159,7 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
         <div className="mb-4">
           <ContextProvidedCard context={message.context} />
 
-          {showContextWaiting && !hasSourceSearchResults && (
+          {showContextWaiting && !hasLoadedSkills && !hasContextSearch && !hasSourceSearchResults && (
             <div className="mt-3">
               <DotsOnlyIndicator />
             </div>
@@ -162,13 +167,17 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
         </div>
       )}
 
-      {hasSourceSearchResults && (
+      {hasLoadedSkills && (
+        <div className="mb-3">
+          <SkillLoadedCard skills={message.loadedSkills ?? []} />
+        </div>
+      )}
+
+      {hasContextSearch && (
         <div className="mb-4">
           <ContextSearchedCard
             results={message.sourceSearchResults ?? []}
-            attachedSourceCount={
-              message.context ? attachedSourceCount : undefined
-            }
+            summary={message.contextSearchSummary}
           />
 
           {showContextWaiting && (
@@ -238,6 +247,74 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
   );
 }
 
+function SkillLoadedCard({ skills }: { skills: AgentLoadedSkill[] }) {
+  const skillCount = skills.length;
+  const firstSkill = skills[0];
+  const visibleSkills = skills.slice(0, 3);
+  const hiddenCount = Math.max(0, skillCount - visibleSkills.length);
+
+  const summary =
+    skillCount === 1
+      ? formatSkillName(firstSkill)
+      : `${skillCount} skills loaded`;
+
+  const detail =
+    skillCount === 1
+      ? 'Behavior instructions added to model context'
+      : skills.map(formatSkillName).join(' · ');
+
+  return (
+    <div className="w-full min-w-0 overflow-hidden rounded-lg border border-sky-200 bg-sky-50/70 text-xs shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20 dark:shadow-none">
+      <div className="flex min-h-10 w-full items-center gap-2 px-2.5 py-2 text-left">
+        <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300">
+          <BookOpen className="size-3" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="truncate text-xs font-semibold text-zinc-950 dark:text-zinc-100">
+              Skill loaded
+            </div>
+
+            <span className="ml-auto inline-flex shrink-0 items-center justify-center rounded-full border border-sky-200 bg-white/80 px-2 py-0.5 text-[10px] font-medium text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+              Ready
+            </span>
+          </div>
+
+          <div className="mt-0.5 truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            {summary}
+            {skillCount === 1 && firstSkill?.version ? ` · v${firstSkill.version}` : ''}
+          </div>
+
+          <div className="mt-0.5 truncate text-[11px] text-zinc-600 dark:text-zinc-400">
+            {detail}
+          </div>
+
+          {skillCount > 1 && (
+            <div className="mt-1 flex min-w-0 flex-wrap gap-1">
+              {visibleSkills.map((skill) => (
+                <span
+                  key={skill.skillId}
+                  className="min-w-0 max-w-full truncate rounded-full border border-sky-200 bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300"
+                  title={formatSkillName(skill)}
+                >
+                  {formatSkillName(skill)}
+                </span>
+              ))}
+
+              {hiddenCount > 0 && (
+                <span className="rounded-full border border-sky-200 bg-white/80 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
+                  +{hiddenCount}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ContextProvidedCard({ context }: { context: AgentProvidedContext }) {
   const contextSpace = context.contextSpaces[0];
   const hasMoreContextSpaces = context.contextSpaces.length > 1;
@@ -291,20 +368,20 @@ function ContextProvidedCard({ context }: { context: AgentProvidedContext }) {
 
 function ContextSearchedCard({
   results,
-  attachedSourceCount,
+  summary,
 }: {
   results: AgentSourceSearchResult[];
-  attachedSourceCount?: number;
+  summary?: AgentContextSearchSummary;
 }) {
   const visibleResults = results.slice(0, 4);
   const hiddenCount = Math.max(0, results.length - visibleResults.length);
-  const selectedCount = results.length;
-  const summary =
-    attachedSourceCount === undefined
-      ? formatSelectedExcerptCount(selectedCount)
-      : `${formatAttachedSourceCount(
-          attachedSourceCount,
-        )} · ${formatSelectedExcerptCount(selectedCount)}`;
+  const selectedCount = summary?.selectedCount ?? results.length;
+  const searchedDocumentCount = summary?.searchedDocumentCount ?? results.length;
+  const status = selectedCount === 0 ? 'No match' : 'Selected';
+  const summaryText =
+    selectedCount === 0
+      ? `${formatSearchedDocumentCount(searchedDocumentCount)} · no relevant excerpt selected`
+      : `${formatSearchedDocumentCount(searchedDocumentCount)} · ${formatSelectedExcerptCount(selectedCount)}`;
 
   return (
     <div className="w-full min-w-0 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/70 text-xs shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:shadow-none">
@@ -319,16 +396,22 @@ function ContextSearchedCard({
           </div>
 
           <div className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
-            {summary}
+            {summaryText}
           </div>
         </div>
 
         <span className="ml-auto inline-flex shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-white/80 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300">
-          Selected
+          {status}
         </span>
       </div>
 
       <div className="flex flex-col gap-2 border-t border-emerald-200/80 bg-white/60 px-3 py-3 dark:border-emerald-900/50 dark:bg-zinc-950/30">
+        {selectedCount === 0 && (
+          <div className="text-xs text-zinc-600 dark:text-zinc-400">
+            No source excerpt was sent to the model context.
+          </div>
+        )}
+
         {visibleResults.map((result) => (
           <div
             key={`${result.sourceId}-${result.relativePath}-${result.snippet}`}
@@ -375,12 +458,16 @@ function ContextSearchedCard({
   );
 }
 
-function formatAttachedSourceCount(value: number): string {
-  return `${value} attached source${value === 1 ? '' : 's'}`;
+function formatSearchedDocumentCount(value: number): string {
+  return `${value} document${value === 1 ? '' : 's'} searched`;
 }
 
 function formatSelectedExcerptCount(value: number): string {
   return `${value} selected excerpt${value === 1 ? '' : 's'}`;
+}
+
+function formatSkillName(skill: AgentLoadedSkill | undefined): string {
+  return skill?.skillName || skill?.skillId || 'Skill';
 }
 
 function ContextProvidedSection({

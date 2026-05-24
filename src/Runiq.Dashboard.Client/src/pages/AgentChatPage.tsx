@@ -68,10 +68,10 @@ function applyStreamEvent(
     };
   }
 
-  if (event.type === 'context_searched') {
-    const sourceSearchResults = event.sourceSearchResults ?? [];
+  if (event.type === 'skill_loaded') {
+    const loadedSkills = event.loadedSkills ?? [];
 
-    if (sourceSearchResults.length === 0) {
+    if (loadedSkills.length === 0) {
       return {
         ...message,
         isStreaming: true,
@@ -81,6 +81,24 @@ function applyStreamEvent(
     return {
       ...message,
       isStreaming: true,
+      loadedSkills,
+    };
+  }
+
+  if (event.type === 'context_searched') {
+    const sourceSearchResults = event.sourceSearchResults ?? [];
+
+    if (!event.contextSearchSummary && sourceSearchResults.length === 0) {
+      return {
+        ...message,
+        isStreaming: true,
+      };
+    }
+
+    return {
+      ...message,
+      isStreaming: true,
+      contextSearchSummary: event.contextSearchSummary ?? undefined,
       sourceSearchResults,
     };
   }

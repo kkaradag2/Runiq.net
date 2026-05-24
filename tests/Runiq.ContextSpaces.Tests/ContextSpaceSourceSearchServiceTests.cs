@@ -161,6 +161,28 @@ public sealed class ContextSpaceSourceSearchServiceTests
         Assert.True(result.Score > 0);
     }
 
+    [Fact]
+    public async Task SearchWithSummaryAsync_ShouldReturnSearchedDocumentCount()
+    {
+        var documents = new[]
+        {
+            CreateDocument("ankara-guide.md", "# Ankara Guide"),
+            CreateDocument("bursa-guide.md", "# Bursa Guide"),
+            CreateDocument("istanbul-guide.md", "# Istanbul Guide")
+        };
+
+        var searchService = new ContextSpaceSourceSearchService(
+            new StubSourceReader(documents));
+
+        var response = await searchService.SearchWithSummaryAsync(
+            CreateContextSpace(),
+            "Bursa",
+            maxResults: 3);
+
+        Assert.Equal(3, response.SearchedDocumentCount);
+        Assert.Single(response.Results);
+    }
+
     private static ContextSpace CreateContextSpace()
     {
         return new ContextSpace(

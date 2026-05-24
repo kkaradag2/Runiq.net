@@ -9,6 +9,9 @@ namespace Runiq.Agents.Runtime;
 public sealed record AgentRuntimeContext(
     IReadOnlyList<ContextSpace> ContextSpaces,
     IReadOnlyList<ContextSpaceSkill> Skills,
+    int AttachedSourceCount = 0,
+    int SearchedDocumentCount = 0,
+    int CandidateCount = 0,
     IReadOnlyList<ContextSpaceSourceSearchResult>? SourceSearchResults = null)
 {
     /// <summary>
@@ -24,4 +27,9 @@ public sealed record AgentRuntimeContext(
         ContextSpaces.Count > 0 ||
         Skills.Count > 0 ||
         RetrievedSourceContext.Count > 0;
+
+    /// <summary>
+    /// Model context'ine eklenmek üzere seçilen source excerpt sayısını döner.
+    /// </summary>
+    public int SelectedCount => RetrievedSourceContext.Count;
 }
