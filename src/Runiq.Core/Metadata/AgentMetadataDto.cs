@@ -94,7 +94,10 @@ public sealed record ContextSpaceSourceMetadataDto(
     string Id,
     string Name,
     string Kind,
-    string? Description);
+    string? Description,
+    string? Path,
+    string? BucketName,
+    string? Prefix);
 
 /// <summary>
 /// Bir context space'e bağlı agent bilgisini temsil eder.

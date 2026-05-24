@@ -164,4 +164,80 @@ public sealed class ContextSpaceTests
             exception.Message);
     }
 
+    [Fact]
+    public void AddSources_ShouldRegisterFileSystemSource()
+    {
+        // Bu test, bağlam alanına dosya sistemi tabanlı bilgi kaynağı eklenebildiğini doğrular.
+        var contextSpace = new ContextSpace(
+            id: "travel-planning",
+            name: "Travel Planning");
+
+        contextSpace.AddSources(sources => sources.FromFileSystem(
+            id: "travel-docs",
+            name: "Travel Documents",
+            path: "./Contexts/TravelPlanning/sources",
+            description: "Sample travel planning documents."));
+
+        var source = Assert.Single(contextSpace.Sources);
+
+        Assert.Equal("travel-docs", source.Id);
+        Assert.Equal("Travel Documents", source.Name);
+        Assert.Equal(ContextSpaceSourceKind.LocalFileSystem, source.Kind);
+        Assert.Equal("Sample travel planning documents.", source.Description);
+        Assert.Equal("./Contexts/TravelPlanning/sources", source.Path);
+        Assert.Null(source.BucketName);
+        Assert.Null(source.Prefix);
+    }
+
+    [Fact]
+    public void AddSources_ShouldRegisterS3Source()
+    {
+        // Bu test, bağlam alanına S3 tabanlı bilgi kaynağı metadata'sı eklenebildiğini doğrular.
+        var contextSpace = new ContextSpace(
+            id: "travel-planning",
+            name: "Travel Planning");
+
+        contextSpace.AddSources(sources => sources.FromS3(
+            id: "travel-docs",
+            name: "Travel Documents",
+            bucketName: "runiq-contexts",
+            prefix: "travel-planning/sources",
+            description: "Sample travel planning documents."));
+
+        var source = Assert.Single(contextSpace.Sources);
+
+        Assert.Equal("travel-docs", source.Id);
+        Assert.Equal("Travel Documents", source.Name);
+        Assert.Equal(ContextSpaceSourceKind.ObjectStorage, source.Kind);
+        Assert.Equal("Sample travel planning documents.", source.Description);
+        Assert.Null(source.Path);
+        Assert.Equal("runiq-contexts", source.BucketName);
+        Assert.Equal("travel-planning/sources", source.Prefix);
+    }
+
+    [Fact]
+    public void AddSources_ShouldRejectDuplicateSourceIds()
+    {
+        // Bu test, aynı bağlam alanı içinde bilgi kaynağı kimliğinin tekrar kullanılamayacağını doğrular.
+        var contextSpace = new ContextSpace(
+            id: "travel-planning",
+            name: "Travel Planning");
+
+        contextSpace.AddSources(sources => sources.FromFileSystem(
+            id: "travel-docs",
+            name: "Travel Documents",
+            path: "./Contexts/TravelPlanning/sources"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            contextSpace.AddSources(sources => sources.FromS3(
+                id: "TRAVEL-DOCS",
+                name: "Travel Documents",
+                bucketName: "runiq-contexts",
+                prefix: "travel-planning/sources")));
+
+        Assert.Equal(
+            "A context space source with id 'TRAVEL-DOCS' is already registered.",
+            exception.Message);
+    }
+
 }

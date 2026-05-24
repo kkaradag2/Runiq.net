@@ -16,10 +16,10 @@ internal static class TravelPlanningContext
                 id: "travel-planning",
                 name: "Travel Planning Context",
                 description: "Shared read-only context for city trip planning agents.")
-            .AddSource(new ContextSpaceSource(
+            .AddSources(sources => sources.FromFileSystem(
                 id: "travel-docs",
                 name: "Travel Documents",
-                kind: ContextSpaceSourceKind.UploadedDocuments,
+                path: "./Contexts/TravelPlanning/sources",
                 description: "Sample travel planning documents and city guide notes."))
             .AddSkills(skills => skills.FromFileSystem(
                 id: "travel-skills",

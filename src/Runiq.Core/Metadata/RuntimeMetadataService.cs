@@ -94,7 +94,10 @@ internal sealed class RuntimeMetadataService : IRuntimeMetadataService
                             Id: source.Id,
                             Name: source.Name,
                             Kind: source.Kind.ToString(),
-                            Description: source.Description))
+                            Description: source.Description,
+                            Path: source.Path,
+                            BucketName: source.BucketName,
+                            Prefix: source.Prefix))
                         .ToList(),
                     SkillSources: contextSpace.SkillSources
                         .Select(skillSource => new ContextSpaceSkillSourceMetadataDto(

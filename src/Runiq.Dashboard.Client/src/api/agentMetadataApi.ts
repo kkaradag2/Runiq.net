@@ -27,6 +27,9 @@ export type ContextSpaceSourceMetadata = {
   name: string;
   kind: string;
   description?: string | null;
+  path?: string | null;
+  bucketName?: string | null;
+  prefix?: string | null;
 };
 
 export type ContextSpaceAttachedAgentMetadata = {

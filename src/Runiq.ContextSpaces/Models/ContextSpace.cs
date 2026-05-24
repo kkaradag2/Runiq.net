@@ -117,4 +117,22 @@ public sealed class ContextSpace
         skillSources.Add(skillSource);
     }
 
+    /// <summary>
+    /// Context space'e bilgi kaynakları ekler.
+    /// </summary>
+    public ContextSpace AddSources(Action<ContextSpaceSourceBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var builder = new ContextSpaceSourceBuilder();
+        configure(builder);
+
+        foreach (var source in builder.Build())
+        {
+            AddSource(source);
+        }
+
+        return this;
+    }
+
 }
