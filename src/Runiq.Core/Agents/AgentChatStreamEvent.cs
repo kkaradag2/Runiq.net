@@ -17,6 +17,8 @@ public sealed record AgentChatStreamEvent(
     [property: JsonPropertyName("contextSpaces")] IReadOnlyList<AgentChatContextSpaceStreamItem>? ContextSpaces = null,
     [property: JsonPropertyName("skills")] IReadOnlyList<AgentChatSkillStreamItem>? Skills = null,
     [property: JsonPropertyName("sources")] IReadOnlyList<AgentChatSourceStreamItem>? Sources = null,
+    [property: JsonPropertyName("loadedSkills")] IReadOnlyList<AgentChatLoadedSkillStreamItem>? LoadedSkills = null,
+    [property: JsonPropertyName("contextSearchSummary")] AgentChatContextSearchSummaryStreamItem? ContextSearchSummary = null,
     [property: JsonPropertyName("sourceSearchResults")] IReadOnlyList<AgentChatSourceSearchResultStreamItem>? SourceSearchResults = null);
 
 
@@ -41,6 +43,15 @@ public sealed record AgentChatSkillStreamItem(
     [property: JsonPropertyName("relativePath")] string RelativePath);
 
 /// <summary>
+/// Chat SSE olayında gösterilecek yüklenen skill özet bilgisini temsil eder.
+/// </summary>
+public sealed record AgentChatLoadedSkillStreamItem(
+    [property: JsonPropertyName("skillId")] string SkillId,
+    [property: JsonPropertyName("skillName")] string SkillName,
+    [property: JsonPropertyName("version")] string? Version,
+    [property: JsonPropertyName("description")] string? Description);
+
+/// <summary>
 /// Chat SSE olayında gösterilecek source özet bilgisini temsil eder.
 /// </summary>
 public sealed record AgentChatSourceStreamItem(
@@ -49,6 +60,14 @@ public sealed record AgentChatSourceStreamItem(
     [property: JsonPropertyName("kind")] string Kind,
     [property: JsonPropertyName("description")] string? Description);
 
+/// <summary>
+/// Chat SSE olayında gösterilecek context source arama özetini temsil eder.
+/// </summary>
+public sealed record AgentChatContextSearchSummaryStreamItem(
+    [property: JsonPropertyName("attachedSourceCount")] int AttachedSourceCount,
+    [property: JsonPropertyName("searchedDocumentCount")] int SearchedDocumentCount,
+    [property: JsonPropertyName("candidateCount")] int CandidateCount,
+    [property: JsonPropertyName("selectedCount")] int SelectedCount);
 
 /// <summary>
 /// Chat SSE olayında gösterilecek source arama sonucunu temsil eder.

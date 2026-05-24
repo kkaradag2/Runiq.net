@@ -21,4 +21,18 @@ public interface IContextSpaceSourceSearchService
         string query,
         int maxResults = 5,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verilen context space içindeki source dokümanlarında sorguya göre arama yapar ve arama özetini döner.
+    /// </summary>
+    /// <param name="contextSpace">Source dokümanları aranacak context space.</param>
+    /// <param name="query">Arama sorgusu.</param>
+    /// <param name="maxResults">Döndürülecek maksimum sonuç sayısı.</param>
+    /// <param name="cancellationToken">İşlemin iptal edilmesini izleyen token.</param>
+    /// <returns>Arama sonucunu ve taranan doküman sayısını içeren yanıt.</returns>
+    Task<ContextSpaceSourceSearchResponse> SearchWithSummaryAsync(
+        ContextSpace contextSpace,
+        string query,
+        int maxResults = 5,
+        CancellationToken cancellationToken = default);
 }

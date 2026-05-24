@@ -66,9 +66,27 @@ internal static class AgentChatStreamEventMapper
                         Description: source.Description))
                     .ToArray()),
 
+            AgentExecutionEventKind.SkillLoaded => new AgentChatStreamEvent(
+                Type: "skill_loaded",
+                Content: null,
+                LoadedSkills: executionEvent.LoadedSkills?
+                    .Select(skill => new AgentChatLoadedSkillStreamItem(
+                        SkillId: skill.SkillId,
+                        SkillName: skill.SkillName,
+                        Version: skill.Version,
+                        Description: skill.Description))
+                    .ToArray()),
+
             AgentExecutionEventKind.ContextSearched => new AgentChatStreamEvent(
                 Type: "context_searched",
                 Content: null,
+                ContextSearchSummary: executionEvent.ContextSearchSummary is null
+                    ? null
+                    : new AgentChatContextSearchSummaryStreamItem(
+                        AttachedSourceCount: executionEvent.ContextSearchSummary.AttachedSourceCount,
+                        SearchedDocumentCount: executionEvent.ContextSearchSummary.SearchedDocumentCount,
+                        CandidateCount: executionEvent.ContextSearchSummary.CandidateCount,
+                        SelectedCount: executionEvent.ContextSearchSummary.SelectedCount),
                 SourceSearchResults: executionEvent.SourceSearchResults?
                     .Select(result => new AgentChatSourceSearchResultStreamItem(
                         SourceId: result.SourceId,

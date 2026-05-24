@@ -15,6 +15,8 @@ public sealed record AgentExecutionEvent(
     IReadOnlyList<AgentExecutionContextSpaceInfo>? ContextSpaces = null,
     IReadOnlyList<AgentExecutionSkillInfo>? Skills = null,
     IReadOnlyList<AgentExecutionSourceInfo>? Sources = null,
+    IReadOnlyList<AgentExecutionLoadedSkillInfo>? LoadedSkills = null,
+    AgentExecutionContextSearchSummaryInfo? ContextSearchSummary = null,
     IReadOnlyList<AgentExecutionSourceSearchResultInfo>? SourceSearchResults = null)
 {
     /// <summary>
@@ -113,18 +115,38 @@ public sealed record AgentExecutionEvent(
     }
 
     /// <summary>
+    /// Agent çalışması için skill yönergelerinin model context'ine eklendiğini bildiren stream olayını oluşturur.
+    /// </summary>
+    /// <param name="loadedSkills">Model context'ine eklenen skill özet bilgileridir.</param>
+    /// <returns>Skill yükleme olayını temsil eden stream olayıdır.</returns>
+    public static AgentExecutionEvent SkillLoaded(
+        IReadOnlyList<AgentExecutionLoadedSkillInfo> loadedSkills)
+    {
+        ArgumentNullException.ThrowIfNull(loadedSkills);
+
+        return new AgentExecutionEvent(
+            Kind: AgentExecutionEventKind.SkillLoaded,
+            Content: null,
+            LoadedSkills: loadedSkills);
+    }
+
+    /// <summary>
     /// Agent çalışması sırasında context source'larda arama yapıldığını bildiren stream olayını oluşturur.
     /// </summary>
+    /// <param name="summary">Context arama özet metrikleridir.</param>
     /// <param name="sourceSearchResults">Kullanıcı girdisine göre bulunan source arama sonuçlarıdır.</param>
     /// <returns>Context arama olayını temsil eden stream olayıdır.</returns>
     public static AgentExecutionEvent ContextSearched(
+        AgentExecutionContextSearchSummaryInfo summary,
         IReadOnlyList<AgentExecutionSourceSearchResultInfo> sourceSearchResults)
     {
+        ArgumentNullException.ThrowIfNull(summary);
         ArgumentNullException.ThrowIfNull(sourceSearchResults);
 
         return new AgentExecutionEvent(
             Kind: AgentExecutionEventKind.ContextSearched,
             Content: null,
+            ContextSearchSummary: summary,
             SourceSearchResults: sourceSearchResults);
     }
 
@@ -200,7 +222,12 @@ public enum AgentExecutionEventKind
     /// <summary>
     /// Agent çalışması sırasında context source'larda arama yapıldığını belirtir.
     /// </summary>
-    ContextSearched = 7
+    ContextSearched = 7,
+
+    /// <summary>
+    /// Agent çalışması için skill yönergelerinin yüklendiğini belirtir.
+    /// </summary>
+    SkillLoaded = 8
 
 }
 
@@ -225,6 +252,15 @@ public sealed record AgentExecutionSkillInfo(
     string RelativePath);
 
 /// <summary>
+/// Agent çalışması için model context'ine eklenen skill özet bilgisini temsil eder.
+/// </summary>
+public sealed record AgentExecutionLoadedSkillInfo(
+    string SkillId,
+    string SkillName,
+    string? Version,
+    string? Description);
+
+/// <summary>
 /// Agent çalışmasına kullanılabilir olarak sağlanan source özet bilgisini temsil eder.
 /// </summary>
 public sealed record AgentExecutionSourceInfo(
@@ -232,6 +268,15 @@ public sealed record AgentExecutionSourceInfo(
     string Name,
     string Kind,
     string? Description);
+
+/// <summary>
+/// Agent çalışması sırasında yapılan context source aramasının özet metriklerini temsil eder.
+/// </summary>
+public sealed record AgentExecutionContextSearchSummaryInfo(
+    int AttachedSourceCount,
+    int SearchedDocumentCount,
+    int CandidateCount,
+    int SelectedCount);
 
 /// <summary>
 /// Agent çalışması sırasında bulunan source arama sonucunu temsil eder.

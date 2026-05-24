@@ -150,6 +150,8 @@ function parseStreamEventPayload(data: string): AgentChatStreamEvent | null {
             contextSpaces: parsed.contextSpaces ?? null,
             skills: parsed.skills ?? null,
             sources: parsed.sources ?? null,
+            loadedSkills: parsed.loadedSkills ?? null,
+            contextSearchSummary: parsed.contextSearchSummary ?? null,
             sourceSearchResults: parsed.sourceSearchResults ?? null,
             toolCallId: parsed.toolCallId ?? null,
             toolName: parsed.toolName ?? null,

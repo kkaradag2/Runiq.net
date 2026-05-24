@@ -31,11 +31,29 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
         int maxResults = 5,
         CancellationToken cancellationToken = default)
     {
+        var response = await SearchWithSummaryAsync(
+            contextSpace,
+            query,
+            maxResults,
+            cancellationToken);
+
+        return response.Results;
+    }
+
+    /// <inheritdoc />
+    public async Task<ContextSpaceSourceSearchResponse> SearchWithSummaryAsync(
+        ContextSpace contextSpace,
+        string query,
+        int maxResults = 5,
+        CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(contextSpace);
 
         if (string.IsNullOrWhiteSpace(query))
         {
-            return [];
+            return new ContextSpaceSourceSearchResponse(
+                SearchedDocumentCount: 0,
+                Results: []);
         }
 
         if (maxResults <= 0)
@@ -50,7 +68,9 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
 
         if (queryTerms.Count == 0)
         {
-            return [];
+            return new ContextSpaceSourceSearchResponse(
+                SearchedDocumentCount: 0,
+                Results: []);
         }
 
         var documents = await sourceReader.ReadAsync(
@@ -88,11 +108,15 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
             });
         }
 
-        return results
+        var orderedResults = results
             .OrderByDescending(result => result.Score)
             .ThenBy(result => result.RelativePath, StringComparer.OrdinalIgnoreCase)
             .Take(maxResults)
             .ToArray();
+
+        return new ContextSpaceSourceSearchResponse(
+            SearchedDocumentCount: documents.Count,
+            Results: orderedResults);
     }
 
     private static double CalculateScore(

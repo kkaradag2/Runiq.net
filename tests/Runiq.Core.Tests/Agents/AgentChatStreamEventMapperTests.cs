@@ -137,7 +137,13 @@ public sealed class AgentChatStreamEventMapperTests
     public void FromExecutionEvent_ShouldMapContextSearched()
     {
         // Context searched olayında source arama sonuçlarının Dashboard DTO'suna taşındığını doğrular.
-        var executionEvent = AgentExecutionEvent.ContextSearched([
+        var executionEvent = AgentExecutionEvent.ContextSearched(
+            new AgentExecutionContextSearchSummaryInfo(
+                AttachedSourceCount: 25,
+                SearchedDocumentCount: 25,
+                CandidateCount: 8,
+                SelectedCount: 1),
+            [
             new AgentExecutionSourceSearchResultInfo(
             SourceId: "travel-docs",
             SourceName: "Travel Documents",
@@ -151,6 +157,11 @@ public sealed class AgentChatStreamEventMapperTests
 
         Assert.Equal("context_searched", streamEvent.Type);
         Assert.Null(streamEvent.Content);
+        Assert.NotNull(streamEvent.ContextSearchSummary);
+        Assert.Equal(25, streamEvent.ContextSearchSummary.AttachedSourceCount);
+        Assert.Equal(25, streamEvent.ContextSearchSummary.SearchedDocumentCount);
+        Assert.Equal(8, streamEvent.ContextSearchSummary.CandidateCount);
+        Assert.Equal(1, streamEvent.ContextSearchSummary.SelectedCount);
 
         var result = Assert.Single(streamEvent.SourceSearchResults!);
 
@@ -160,6 +171,31 @@ public sealed class AgentChatStreamEventMapperTests
         Assert.Equal("guide.txt", result.FileName);
         Assert.Equal("Museum visit is recommended.", result.Snippet);
         Assert.Equal(2.5, result.Score);
+    }
+
+    [Fact]
+    public void FromExecutionEvent_ShouldMapSkillLoaded()
+    {
+        // Skill loaded olayında yüklenen skill özetlerinin Dashboard DTO'suna taşındığını doğrular.
+        var executionEvent = AgentExecutionEvent.SkillLoaded([
+            new AgentExecutionLoadedSkillInfo(
+                SkillId: "travel-planning",
+                SkillName: "Travel Planning Skill",
+                Version: "1.0.0",
+                Description: "Travel behavior instructions.")
+        ]);
+
+        var streamEvent = AgentChatStreamEventMapper.FromExecutionEvent(executionEvent);
+
+        Assert.Equal("skill_loaded", streamEvent.Type);
+        Assert.Null(streamEvent.Content);
+
+        var skill = Assert.Single(streamEvent.LoadedSkills!);
+
+        Assert.Equal("travel-planning", skill.SkillId);
+        Assert.Equal("Travel Planning Skill", skill.SkillName);
+        Assert.Equal("1.0.0", skill.Version);
+        Assert.Equal("Travel behavior instructions.", skill.Description);
     }
 
 }

@@ -43,6 +43,20 @@ export type AgentProvidedContext = {
   sources: AgentProvidedSource[];
 };
 
+export type AgentLoadedSkill = {
+  skillId: string;
+  skillName: string;
+  version?: string | null;
+  description?: string | null;
+};
+
+export type AgentContextSearchSummary = {
+  attachedSourceCount: number;
+  searchedDocumentCount: number;
+  candidateCount: number;
+  selectedCount: number;
+};
+
 export type AgentSourceSearchResult = {
   sourceId: string;
   sourceName: string;
@@ -57,6 +71,8 @@ export type AgentChatMessage = {
   role: AgentChatMessageRole;
   content: string;
   context?: AgentProvidedContext;
+  loadedSkills?: AgentLoadedSkill[];
+  contextSearchSummary?: AgentContextSearchSummary;
   sourceSearchResults?: AgentSourceSearchResult[];
   toolCalls?: AgentToolCall[];
   isStreaming?: boolean;
@@ -64,6 +80,7 @@ export type AgentChatMessage = {
 
 export type AgentChatStreamEventType =
   | 'context_provided'
+  | 'skill_loaded'
   | 'assistant_delta'
   | 'context_searched'
   | 'tool_call_started'
@@ -78,6 +95,8 @@ export type AgentChatStreamEvent = {
   contextSpaces?: AgentProvidedContextSpace[] | null;
   skills?: AgentProvidedSkill[] | null;
   sources?: AgentProvidedSource[] | null;
+  loadedSkills?: AgentLoadedSkill[] | null;
+  contextSearchSummary?: AgentContextSearchSummary | null;
   sourceSearchResults?: AgentSourceSearchResult[] | null;
   toolCallId?: string | null;
   toolName?: string | null;
