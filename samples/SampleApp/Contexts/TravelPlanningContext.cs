@@ -3,12 +3,12 @@
 namespace SampleApp.Contexts;
 
 /// <summary>
-/// Travel Agent için kullanılan örnek seyahat planlama context space tanımını sağlar.
+/// Travel planning agent'larının kullanacağı örnek context space tanımını oluşturur.
 /// </summary>
 internal static class TravelPlanningContext
 {
     /// <summary>
-    /// Travel Agent'ın kullanacağı seyahat planlama context space örneğini oluşturur.
+    /// Travel planning agent'ları için örnek context space döner.
     /// </summary>
     public static ContextSpace Create()
     {
@@ -20,6 +20,10 @@ internal static class TravelPlanningContext
                 id: "travel-docs",
                 name: "Travel Documents",
                 kind: ContextSpaceSourceKind.UploadedDocuments,
-                description: "Sample travel planning documents and city guide notes."));
+                description: "Sample travel planning documents and city guide notes."))
+            .AddSkills(skills => skills.FromFileSystem(
+                id: "travel-skills",
+                name: "Travel Skills",
+                path: "./Contexts/TravelPlanning/skills"));
     }
 }

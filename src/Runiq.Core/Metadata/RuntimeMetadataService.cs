@@ -1,6 +1,7 @@
 ﻿using Runiq.Agents;
 using Runiq.Agents.Tools;
 using Runiq.ContextSpaces.Models;
+using Runiq.ContextSpaces.Services;
 
 namespace Runiq.Core.Metadata;
 
@@ -12,15 +13,18 @@ internal sealed class RuntimeMetadataService : IRuntimeMetadataService
     private readonly IEnumerable<Agent> _agents;
     private readonly IReadOnlyList<AgentToolRegistration> _registeredTools;
     private readonly IReadOnlyList<ContextSpace> _contextSpaces;
+    private readonly IContextSpaceSkillDiscoveryService _skillDiscoveryService;
 
     public RuntimeMetadataService(
         IEnumerable<Agent> agents,
         IReadOnlyList<AgentToolRegistration>? registeredTools = null,
-        IReadOnlyList<ContextSpace>? contextSpaces = null)
+        IReadOnlyList<ContextSpace>? contextSpaces = null,
+        IContextSpaceSkillDiscoveryService? skillDiscoveryService = null)
     {
         _agents = agents;
         _registeredTools = registeredTools ?? [];
         _contextSpaces = contextSpaces ?? [];
+        _skillDiscoveryService = skillDiscoveryService ?? new ContextSpaceSkillDiscoveryService();
     }
 
     public IReadOnlyList<AgentMetadataDto> GetAgents()
@@ -77,24 +81,48 @@ internal sealed class RuntimeMetadataService : IRuntimeMetadataService
         var agents = _agents.ToArray();
 
         return _contextSpaces
-            .Select(contextSpace => new ContextSpaceMetadataDto(
-                Id: contextSpace.Id,
-                Name: contextSpace.Name,
-                Description: contextSpace.Description,
-                Sources: contextSpace.Sources
-                    .Select(source => new ContextSpaceSourceMetadataDto(
-                        Id: source.Id,
-                        Name: source.Name,
-                        Kind: source.Kind.ToString(),
-                        Description: source.Description))
-                    .ToList(),
-                AttachedAgents: agents
-                    .Where(agent => agent.ContextSpaceIds.Any(contextSpaceId =>
-                        contextSpaceId.Equals(contextSpace.Id, StringComparison.OrdinalIgnoreCase)))
-                    .Select(agent => new ContextSpaceAttachedAgentMetadataDto(
-                        Id: agent.Id,
-                        Name: agent.Name))
-                    .ToList()))
+            .Select(contextSpace =>
+            {
+                var skills = _skillDiscoveryService.Discover(contextSpace);
+
+                return new ContextSpaceMetadataDto(
+                    Id: contextSpace.Id,
+                    Name: contextSpace.Name,
+                    Description: contextSpace.Description,
+                    Sources: contextSpace.Sources
+                        .Select(source => new ContextSpaceSourceMetadataDto(
+                            Id: source.Id,
+                            Name: source.Name,
+                            Kind: source.Kind.ToString(),
+                            Description: source.Description))
+                        .ToList(),
+                    SkillSources: contextSpace.SkillSources
+                        .Select(skillSource => new ContextSpaceSkillSourceMetadataDto(
+                            Id: skillSource.Id,
+                            Name: skillSource.Name,
+                            Kind: skillSource.Kind.ToString(),
+                            Path: skillSource.Path,
+                            BucketName: skillSource.BucketName,
+                            Prefix: skillSource.Prefix))
+                        .ToList(),
+                    Skills: skills
+                        .Select(skill => new ContextSpaceSkillMetadataDto(
+                            Id: skill.Id,
+                            Name: skill.Name,
+                            Description: skill.Description,
+                            Version: skill.Version,
+                            Tags: skill.Tags,
+                            SourceId: skill.SourceId,
+                            RelativePath: skill.RelativePath))
+                        .ToList(),
+                    AttachedAgents: agents
+                        .Where(agent => agent.ContextSpaceIds.Any(contextSpaceId =>
+                            contextSpaceId.Equals(contextSpace.Id, StringComparison.OrdinalIgnoreCase)))
+                        .Select(agent => new ContextSpaceAttachedAgentMetadataDto(
+                            Id: agent.Id,
+                            Name: agent.Name))
+                        .ToList());
+            })
             .ToList();
     }
 

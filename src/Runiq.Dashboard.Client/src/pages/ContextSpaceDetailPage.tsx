@@ -5,7 +5,7 @@ import {
   type ContextSpaceMetadata,
 } from '../api/agentMetadataApi';
 import { ContextSpaceInspectorPanel } from '../components/ContextSpaces/ContextSpaceInspectorPanel';
-import { ContextSpaceSourcesPanel } from '../components/ContextSpaces/ContextSpaceSourcesPanel';
+import { ContextSpaceMainPanel } from '../components/ContextSpaces/ContextSpaceMainPanel';
 import { getDashboardBasePath } from '../dashboardConfig';
 
 type ContextSpaceDetailPageProps = {
@@ -90,7 +90,7 @@ export function ContextSpaceDetailPage({
 
   return (
     <div className="flex h-full min-h-0 w-full gap-3">
-      <ContextSpaceSourcesPanel contextSpace={contextSpace} />
+      <ContextSpaceMainPanel contextSpace={contextSpace} />
       <ContextSpaceInspectorPanel contextSpace={contextSpace} />
     </div>
   );

@@ -39,7 +39,28 @@ export type ContextSpaceMetadata = {
   name: string;
   description?: string | null;
   sources: ContextSpaceSourceMetadata[];
+  skillSources: ContextSpaceSkillSourceMetadata[];
+  skills: ContextSpaceSkillMetadata[];
   attachedAgents: ContextSpaceAttachedAgentMetadata[];
+};
+
+export type ContextSpaceSkillSourceMetadata = {
+  id: string;
+  name: string;
+  kind: string;
+  path?: string | null;
+  bucketName?: string | null;
+  prefix?: string | null;
+};
+
+export type ContextSpaceSkillMetadata = {
+  id: string;
+  name: string;
+  description?: string | null;
+  version?: string | null;
+  tags: string[];
+  sourceId: string;
+  relativePath: string;
 };
 
 export type ToolAttachedAgentMetadata = {

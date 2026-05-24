@@ -1,4 +1,7 @@
-﻿namespace Runiq.ContextSpaces.Models;
+﻿using Runiq.ContextSpaces.Builders;
+using Runiq.ContextSpaces.Models.Skills;
+
+namespace Runiq.ContextSpaces.Models;
 
 /// <summary>
 /// Bir agent'ın görev yaparken erişebileceği bilgi, kaynak ve politika sınırını temsil eder.
@@ -6,6 +9,8 @@
 public sealed class ContextSpace
 {
     private readonly List<ContextSpaceSource> _sources = [];
+
+    private readonly List<ContextSpaceSkillSource> skillSources = [];
 
     /// <summary>
     /// Context space için benzersiz teknik kimliği ifade eder.
@@ -26,6 +31,11 @@ public sealed class ContextSpace
     /// Context space içinde tanımlı bilgi kaynaklarını ifade eder.
     /// </summary>
     public IReadOnlyList<ContextSpaceSource> Sources => _sources;
+
+    /// <summary>
+    /// Bağlam alanına bağlı skill kaynaklarını döner.
+    /// </summary>
+    public IReadOnlyList<ContextSpaceSkillSource> SkillSources => skillSources;
 
     /// <summary>
     /// Yeni bir context space örneği oluşturur.
@@ -74,4 +84,37 @@ public sealed class ContextSpace
         _sources.Add(source);
         return this;
     }
+
+    /// <summary>
+    /// Bağlam alanına skill kaynakları ekler.
+    /// </summary>
+    public ContextSpace AddSkills(Action<ContextSpaceSkillBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var builder = new ContextSpaceSkillBuilder();
+        configure(builder);
+
+        foreach (var skillSource in builder.Build())
+        {
+            AddSkillSource(skillSource);
+        }
+
+        return this;
+    }
+
+    private void AddSkillSource(ContextSpaceSkillSource skillSource)
+    {
+        ArgumentNullException.ThrowIfNull(skillSource);
+
+        if (skillSources.Any(existing =>
+            string.Equals(existing.Id, skillSource.Id, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException(
+                $"Context space '{Id}' already contains a skill source with id '{skillSource.Id}'.");
+        }
+
+        skillSources.Add(skillSource);
+    }
+
 }

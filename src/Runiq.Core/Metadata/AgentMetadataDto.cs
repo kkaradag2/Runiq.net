@@ -60,7 +60,32 @@ public sealed record ContextSpaceMetadataDto(
     string Name,
     string? Description,
     IReadOnlyList<ContextSpaceSourceMetadataDto> Sources,
+    IReadOnlyList<ContextSpaceSkillSourceMetadataDto> SkillSources,
+    IReadOnlyList<ContextSpaceSkillMetadataDto> Skills,
     IReadOnlyList<ContextSpaceAttachedAgentMetadataDto> AttachedAgents);
+
+/// <summary>
+/// Context space içinde tanımlı skill kaynağı metadata bilgisini temsil eder.
+/// </summary>
+public sealed record ContextSpaceSkillSourceMetadataDto(
+    string Id,
+    string Name,
+    string Kind,
+    string? Path,
+    string? BucketName,
+    string? Prefix);
+
+/// <summary>
+/// Context space içinde keşfedilen skill metadata bilgisini temsil eder.
+/// </summary>
+public sealed record ContextSpaceSkillMetadataDto(
+    string Id,
+    string Name,
+    string? Description,
+    string? Version,
+    IReadOnlyList<string> Tags,
+    string SourceId,
+    string RelativePath);
 
 /// <summary>
 /// Context space içinde tanımlı bilgi kaynağı metadata bilgisini temsil eder.

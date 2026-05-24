@@ -9,6 +9,7 @@ using Runiq.Core.Configuration;
 using Runiq.Core.Metadata;
 using Runiq.Core.Tools;
 using Runiq.Core.Validation;
+using Runiq.ContextSpaces.Services;
 
 namespace Runiq.Core;
 
@@ -25,6 +26,8 @@ public static class RuniqServerServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IRuntimeMetadataService, RuntimeMetadataService>();
+
+        services.AddSingleton<IContextSpaceSkillDiscoveryService, ContextSpaceSkillDiscoveryService>();
 
         services.AddHttpClient<OpenAIResponsesClient>();
         services.AddHttpClient<OpenAICompatibleClient>();

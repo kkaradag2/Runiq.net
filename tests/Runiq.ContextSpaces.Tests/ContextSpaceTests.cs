@@ -1,4 +1,5 @@
 ﻿using Runiq.ContextSpaces.Models;
+using Runiq.ContextSpaces.Models.Skills;
 
 namespace Runiq.ContextSpaces.Tests;
 
@@ -90,4 +91,77 @@ public sealed class ContextSpaceTests
 
         Assert.Contains("travel-docs", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void AddSkills_ShouldRegisterFileSystemSkillSource()
+    {
+        // Bu test, bağlam alanına dosya sistemi tabanlı skill kaynağı eklenebildiğini doğrular.
+        var contextSpace = new ContextSpace(
+            id: "travel-planning",
+            name: "Travel Planning");
+
+        contextSpace.AddSkills(skills => skills.FromFileSystem(
+            id: "travel-skills",
+            name: "Travel Skills",
+            path: "./Contexts/TravelPlanning/skills"));
+
+        var skillSource = Assert.Single(contextSpace.SkillSources);
+
+        Assert.Equal("travel-skills", skillSource.Id);
+        Assert.Equal("Travel Skills", skillSource.Name);
+        Assert.Equal(ContextSpaceLocationKind.FileSystem, skillSource.Kind);
+        Assert.Equal("./Contexts/TravelPlanning/skills", skillSource.Path);
+        Assert.Null(skillSource.BucketName);
+        Assert.Null(skillSource.Prefix);
+    }
+
+    [Fact]
+    public void AddSkills_ShouldRegisterS3SkillSource()
+    {
+        // Bu test, bağlam alanına S3 tabanlı skill kaynağı metadata'sı eklenebildiğini doğrular.
+        var contextSpace = new ContextSpace(
+            id: "travel-planning",
+            name: "Travel Planning");
+
+        contextSpace.AddSkills(skills => skills.FromS3(
+            id: "team-skills",
+            name: "Team Skills",
+            bucketName: "runiq-contexts",
+            prefix: "travel-planning/skills"));
+
+        var skillSource = Assert.Single(contextSpace.SkillSources);
+
+        Assert.Equal("team-skills", skillSource.Id);
+        Assert.Equal("Team Skills", skillSource.Name);
+        Assert.Equal(ContextSpaceLocationKind.S3, skillSource.Kind);
+        Assert.Null(skillSource.Path);
+        Assert.Equal("runiq-contexts", skillSource.BucketName);
+        Assert.Equal("travel-planning/skills", skillSource.Prefix);
+    }
+
+    [Fact]
+    public void AddSkills_ShouldRejectDuplicateSkillSourceIds()
+    {
+        // Bu test, aynı bağlam alanı içinde skill kaynağı kimliğinin tekrar kullanılamayacağını doğrular.
+        var contextSpace = new ContextSpace(
+            id: "travel-planning",
+            name: "Travel Planning");
+
+        contextSpace.AddSkills(skills => skills.FromFileSystem(
+            id: "travel-skills",
+            name: "Travel Skills",
+            path: "./Contexts/TravelPlanning/skills"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            contextSpace.AddSkills(skills => skills.FromS3(
+                id: "TRAVEL-SKILLS",
+                name: "Team Skills",
+                bucketName: "runiq-contexts",
+                prefix: "travel-planning/skills")));
+
+        Assert.Equal(
+            "Context space 'travel-planning' already contains a skill source with id 'TRAVEL-SKILLS'.",
+            exception.Message);
+    }
+
 }
