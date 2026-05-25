@@ -1,4 +1,6 @@
-﻿using Runiq.ContextSpaces.Models.Sources;
+﻿using System.Text;
+using UglyToad.PdfPig;
+using Runiq.ContextSpaces.Models.Sources;
 
 namespace Runiq.ContextSpaces.Services;
 
@@ -12,7 +14,8 @@ public sealed class ContextSpaceFileSystemSourceReader : IContextSpaceSourceRead
         {
             [".md"] = "text/markdown",
             [".txt"] = "text/plain",
-            [".json"] = "application/json"
+            [".json"] = "application/json",
+            [".pdf"] = "application/pdf"
         };
 
     private readonly long maxFileSizeInBytes;
@@ -21,7 +24,7 @@ public sealed class ContextSpaceFileSystemSourceReader : IContextSpaceSourceRead
     /// Yeni bir dosya sistemi source reader örneği oluşturur.
     /// </summary>
     /// <param name="maxFileSizeInBytes">Okunmasına izin verilen maksimum dosya boyutu.</param>
-    public ContextSpaceFileSystemSourceReader(long maxFileSizeInBytes = 512 * 1024)
+    public ContextSpaceFileSystemSourceReader(long maxFileSizeInBytes = 5 * 1024 * 1024)
     {
         if (maxFileSizeInBytes <= 0)
         {
@@ -93,8 +96,9 @@ public sealed class ContextSpaceFileSystemSourceReader : IContextSpaceSourceRead
                     continue;
                 }
 
-                var content = await File.ReadAllTextAsync(
+                var content = await ReadContentAsync(
                     fullFilePath,
+                    extension,
                     cancellationToken);
 
                 var relativePath = Path.GetRelativePath(sourceRoot, fullFilePath)
@@ -132,4 +136,55 @@ public sealed class ContextSpaceFileSystemSourceReader : IContextSpaceSourceRead
             normalizedRoot,
             StringComparison.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// Dosya uzantısına göre source doküman içeriğini okunabilir metne dönüştürür.
+    /// </summary>
+    private static async Task<string> ReadContentAsync(
+        string filePath,
+        string extension,
+        CancellationToken cancellationToken)
+    {
+        if (extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return ReadPdfContent(
+                filePath,
+                cancellationToken);
+        }
+
+        return await File.ReadAllTextAsync(
+            filePath,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// PDF dokümanından sayfa bazlı metin içeriğini çıkarır.
+    /// </summary>
+    private static string ReadPdfContent(
+        string filePath,
+        CancellationToken cancellationToken)
+    {
+        var builder = new StringBuilder();
+
+        using var document = PdfDocument.Open(filePath);
+
+        foreach (var page in document.GetPages())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (builder.Length > 0)
+            {
+                builder.AppendLine();
+                builder.AppendLine();
+            }
+
+            builder.AppendLine($"--- Page {page.Number} ---");
+            builder.AppendLine(page.Text);
+        }
+
+        return builder.ToString().Trim();
+    }
+
+
+
 }

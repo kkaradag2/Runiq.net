@@ -151,6 +151,70 @@ public sealed class AgentExecutionRuntimeTests
         Assert.Equal(0, contextSearchedEvent.ContextSearchSummary!.SelectedCount);
     }
 
+    [Fact]
+    public async Task ExecuteStreamAsync_ShouldSelectRealSamplePdf_WhenKemeraltıMatches()
+    {
+        // Bu test, gerçek sample PDF kaynağındaki güçlü Türkçe entity eşleşmesinin runtime excerpt seçimine taşındığını doğrular.
+        var agent = new Agent(
+                id: "travel-agent",
+                name: "Travel Agent",
+                instructions: "Plan short travel routes.",
+                model: "ollama/llama3")
+            .UseContextSpace("travel-planning");
+
+        var sourcePath = Path.GetFullPath(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "samples",
+                "SampleApp",
+                "Contexts",
+                "TravelPlanning",
+                "sources"));
+
+        var contextSpace = new ContextSpace(
+                id: "travel-planning",
+                name: "Travel Planning")
+            .AddSources(sources => sources.FromFileSystem(
+                id: "travel-docs",
+                name: "Travel Documents",
+                path: sourcePath));
+
+        var runtime = new AgentExecutionRuntime(
+            agents: [agent],
+            openAIResponsesClient: new OpenAIResponsesClient(new HttpClient()),
+            openAICompatibleClient: new OpenAICompatibleClient(new HttpClient()),
+            toolInvoker: new AgentToolInvoker(new ServiceCollection().BuildServiceProvider()),
+            contextSpaces: [contextSpace],
+            skillDiscoveryService: new StubSkillDiscoveryService([]),
+            sourceSearchService: new ContextSpaceSourceSearchService(
+                new ContextSpaceFileSystemSourceReader()));
+
+        var contextSearchedEvent = await ExecuteAndGetContextSearchedEventAsync(
+            runtime,
+            agent.Id,
+            "Kemeraltı için kısa bir gezi planı çıkar");
+
+        var selectedResults = contextSearchedEvent.SourceSearchResults!;
+
+        Assert.Contains(selectedResults, result =>
+            result.RelativePath.Equals(
+                "journey-to-history-and-culture.pdf",
+                StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(selectedResults, result =>
+            result.RelativePath.Contains("ankara", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(selectedResults, result =>
+            result.RelativePath.Contains("bursa", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(selectedResults, result =>
+            result.RelativePath.Contains("istanbul", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(6, contextSearchedEvent.ContextSearchSummary!.SearchedDocumentCount);
+        Assert.Equal(selectedResults.Count, contextSearchedEvent.ContextSearchSummary.SelectedCount);
+    }
+
     private sealed class StubSkillDiscoveryService : IContextSpaceSkillDiscoveryService
     {
         private readonly IReadOnlyList<ContextSpaceSkill> skills;

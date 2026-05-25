@@ -1,5 +1,6 @@
 ﻿using Runiq.ContextSpaces.Models.Sources;
 using Runiq.ContextSpaces.Services;
+using System.Text;
 
 namespace Runiq.ContextSpaces.Tests;
 
@@ -25,6 +26,10 @@ public sealed class ContextSpaceFileSystemSourceReaderTests
             Path.Combine(testDirectory.Path, "settings.json"),
             """{ "city": "Ankara" }""");
 
+        WriteMinimalPdf(
+            Path.Combine(testDirectory.Path, "izmir-guide.pdf"),
+            "Izmir travel guide with Kordon, Kemeralti and Agora notes.");
+
         var contextSpace = new ContextSpace(
             id: "travel-planning",
             name: "Travel Planning");
@@ -38,7 +43,7 @@ public sealed class ContextSpaceFileSystemSourceReaderTests
 
         var documents = await reader.ReadAsync(contextSpace);
 
-        Assert.Equal(3, documents.Count);
+        Assert.Equal(4, documents.Count);
 
         Assert.Contains(documents, document =>
             document.RelativePath == "overview.md" &&
@@ -54,6 +59,12 @@ public sealed class ContextSpaceFileSystemSourceReaderTests
             document.RelativePath == "settings.json" &&
             document.ContentType == "application/json" &&
             document.Content.Contains("Ankara", StringComparison.Ordinal));
+
+        Assert.Contains(documents, document =>
+            document.RelativePath == "izmir-guide.pdf" &&
+            document.ContentType == "application/pdf" &&
+            document.Extension == ".pdf" &&
+            document.Content.Contains("Izmir travel guide", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -71,8 +82,8 @@ public sealed class ContextSpaceFileSystemSourceReaderTests
             "Unsupported binary-like file.");
 
         File.WriteAllText(
-            Path.Combine(testDirectory.Path, "document.pdf"),
-            "Unsupported pdf file for v1.");
+            Path.Combine(testDirectory.Path, "archive.zip"),
+            "Unsupported archive file.");
 
         var contextSpace = new ContextSpace(
             id: "travel-planning",
@@ -82,6 +93,8 @@ public sealed class ContextSpaceFileSystemSourceReaderTests
             id: "travel-docs",
             name: "Travel Documents",
             path: testDirectory.Path));
+
+
 
         var reader = new ContextSpaceFileSystemSourceReader();
 
@@ -187,6 +200,56 @@ public sealed class ContextSpaceFileSystemSourceReaderTests
             reader.ReadAsync(contextSpace));
 
         Assert.Contains(missingPath, exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void WriteMinimalPdf(string filePath, string text)
+    {
+        var escapedText = text
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("(", "\\(", StringComparison.Ordinal)
+            .Replace(")", "\\)", StringComparison.Ordinal);
+
+        var objects = new[]
+        {
+            "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+            "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+            "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+            "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+            $"5 0 obj\n<< /Length {Encoding.ASCII.GetByteCount($"BT /F1 12 Tf 72 720 Td ({escapedText}) Tj ET")} >>\nstream\nBT /F1 12 Tf 72 720 Td ({escapedText}) Tj ET\nendstream\nendobj\n"
+        };
+
+        var builder = new StringBuilder();
+        builder.Append("%PDF-1.4\n");
+
+        var offsets = new List<int> { 0 };
+
+        foreach (var pdfObject in objects)
+        {
+            offsets.Add(Encoding.ASCII.GetByteCount(builder.ToString()));
+            builder.Append(pdfObject);
+        }
+
+        var xrefOffset = Encoding.ASCII.GetByteCount(builder.ToString());
+
+        builder.Append("xref\n");
+        builder.Append($"0 {objects.Length + 1}\n");
+        builder.Append("0000000000 65535 f \n");
+
+        foreach (var offset in offsets.Skip(1))
+        {
+            builder.Append($"{offset:0000000000} 00000 n \n");
+        }
+
+        builder.Append("trailer\n");
+        builder.Append($"<< /Size {objects.Length + 1} /Root 1 0 R >>\n");
+        builder.Append("startxref\n");
+        builder.Append(xrefOffset);
+        builder.Append("\n%%EOF");
+
+        File.WriteAllText(
+            filePath,
+            builder.ToString(),
+            Encoding.ASCII);
     }
 
     private sealed class TemporaryDirectory : IDisposable

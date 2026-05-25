@@ -17,7 +17,8 @@ internal sealed class ContextSpaceSourceDocumentApiHandler
         {
             [".md"] = "text/markdown",
             [".txt"] = "text/plain",
-            [".json"] = "application/json"
+            [".json"] = "application/json",
+            [".pdf"] = "application/pdf"
         };
 
     private readonly IReadOnlyList<ContextSpace> contextSpaces;
@@ -84,11 +85,12 @@ internal sealed class ContextSpaceSourceDocumentApiHandler
             SourceGroups: sourceGroups));
     }
 
+
     public async Task<IResult> PreviewAsync(
-        string contextSpaceId,
-        string? sourceId,
-        string? path,
-        CancellationToken cancellationToken)
+    string contextSpaceId,
+    string? sourceId,
+    string? path,
+    CancellationToken cancellationToken)
     {
         var contextSpace = FindContextSpace(contextSpaceId);
 
@@ -143,27 +145,37 @@ internal sealed class ContextSpaceSourceDocumentApiHandler
             return Results.NotFound();
         }
 
-        var fileInfo = new FileInfo(fullPath);
-        var isTruncated = fileInfo.Length > MaxPreviewSizeInBytes;
-
-        await using var stream = File.OpenRead(fullPath);
-        var bytesToRead = (int)Math.Min(fileInfo.Length, MaxPreviewSizeInBytes);
-        var buffer = new byte[bytesToRead];
-        var bytesRead = await stream.ReadAsync(
-            buffer.AsMemory(0, bytesToRead),
+        var documents = await sourceReader.ReadAsync(
+            contextSpace,
             cancellationToken);
-        var content = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+        var previewDocument = documents.FirstOrDefault(document =>
+            document.SourceId.Equals(source.Id, StringComparison.OrdinalIgnoreCase) &&
+            document.RelativePath.Equals(relativePath, StringComparison.OrdinalIgnoreCase));
+
+        if (previewDocument is null)
+        {
+            return Results.NotFound();
+        }
+
+        var content = previewDocument.Content;
+        var isTruncated = content.Length > MaxPreviewSizeInBytes;
+
+        if (isTruncated)
+        {
+            content = content[..(int)MaxPreviewSizeInBytes];
+        }
 
         return Results.Ok(new ContextSpaceSourceDocumentPreviewDto(
             ContextSpaceId: contextSpace.Id,
             SourceId: source.Id,
             SourceName: source.Name,
             RelativePath: relativePath,
-            FileName: Path.GetFileName(relativePath),
-            ContentType: SupportedPreviewContentTypes[extension],
+            FileName: previewDocument.FileName,
+            ContentType: previewDocument.ContentType,
             Content: content,
             IsTruncated: isTruncated,
-            SizeBytes: fileInfo.Length));
+            SizeBytes: previewDocument.SizeInBytes));
     }
 
     private ContextSpace? FindContextSpace(string contextSpaceId)

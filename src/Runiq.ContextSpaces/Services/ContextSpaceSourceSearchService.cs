@@ -1,4 +1,6 @@
 ﻿using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Text;
 using Runiq.ContextSpaces.Models.Skills;
 using Runiq.ContextSpaces.Models.Sources;
 
@@ -11,6 +13,61 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
 {
     private const int DefaultSnippetLength = 320;
     private const int TitleScanLength = 250;
+    private const double StrongEntityMatchBoost = 8.0;
+    private const double MinimumRelativeResultScoreRatio = 0.30;
+
+    private static readonly ISet<string> StopWords = new HashSet<string>(
+        StringComparer.OrdinalIgnoreCase)
+    {
+        "a",
+        "an",
+        "and",
+        "bir",
+        "bu",
+        "cultural",
+        "da",
+        "day",
+        "days",
+        "de",
+        "çıkar",
+        "gezi",
+        "group",
+        "grup",
+        "grupla",
+        "guide",
+        "gün",
+        "günlük",
+        "historical",
+        "history",
+        "hazırla",
+        "icin",
+        "için",
+        "ile",
+        "kapsayan",
+        "kapsayacak",
+        "kişilik",
+        "kisa",
+        "kısa",
+        "lazım",
+        "mekan",
+        "mekanlar",
+        "mekanları",
+        "orta",
+        "plan",
+        "planı",
+        "planlamamız",
+        "program",
+        "programı",
+        "rota",
+        "route",
+        "the",
+        "tarih",
+        "tarihi",
+        "travel",
+        "trip",
+        "yaş",
+        "üzeri"
+    };
 
     private readonly IContextSpaceSourceReader sourceReader;
 
@@ -77,38 +134,63 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
             contextSpace,
             cancellationToken);
 
-        var results = new List<ContextSpaceSourceSearchResult>();
+        var candidates = new List<ScoredSourceCandidate>();
 
         foreach (var document in documents)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var content = NormalizeWhitespace(document.Content);
+            var rawContent = document.Content;
+            var content = NormalizeWhitespace(rawContent);
 
             if (string.IsNullOrWhiteSpace(content))
             {
                 continue;
             }
 
-            var score = CalculateScore(document, content, queryTerms);
+            var match = CalculateMatch(
+                document,
+                rawContent,
+                content,
+                queryTerms);
 
-            if (score <= 0)
+            if (match.Score <= 0)
             {
                 continue;
             }
 
-            results.Add(new ContextSpaceSourceSearchResult
-            {
-                SourceId = document.SourceId,
-                SourceName = document.SourceName,
-                RelativePath = document.RelativePath,
-                FileName = document.FileName,
-                Snippet = CreateSnippet(content, queryTerms),
-                Score = score
-            });
+            candidates.Add(new ScoredSourceCandidate(
+                Result: new ContextSpaceSourceSearchResult
+                {
+                    SourceId = document.SourceId,
+                    SourceName = document.SourceName,
+                    RelativePath = document.RelativePath,
+                    FileName = document.FileName,
+                    Snippet = CreateSnippet(content, queryTerms),
+                    Score = match.Score
+                },
+                OwnershipMatchedTerms: match.OwnershipMatchedTerms));
         }
 
-        var orderedResults = results
+        var ownershipMatchedTerms = candidates
+            .SelectMany(candidate => candidate.OwnershipMatchedTerms)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (ownershipMatchedTerms.Length > 0)
+        {
+            candidates = candidates
+                .Where(candidate => candidate.OwnershipMatchedTerms.Overlaps(ownershipMatchedTerms))
+                .ToList();
+        }
+
+        var minimumResultScore = candidates.Count == 0
+            ? 0.0
+            : candidates.Max(candidate => candidate.Result.Score) * MinimumRelativeResultScoreRatio;
+
+        var orderedResults = candidates
+            .Select(candidate => candidate.Result)
+            .Where(result => result.Score >= minimumResultScore)
             .OrderByDescending(result => result.Score)
             .ThenBy(result => result.RelativePath, StringComparer.OrdinalIgnoreCase)
             .Take(maxResults)
@@ -119,50 +201,124 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
             Results: orderedResults);
     }
 
-    private static double CalculateScore(
+    private static SourceMatch CalculateMatch(
         ContextSpaceSourceDocument document,
+        string rawContent,
         string content,
-        IReadOnlyList<string> queryTerms)
+        IReadOnlyList<SearchTerm> queryTerms)
     {
         var score = 0.0;
-        var titleArea = content[..Math.Min(content.Length, TitleScanLength)];
+        var titleArea = NormalizeWhitespace(ExtractTitleArea(rawContent));
+        var foldedContent = FoldForSearch(content);
+        var foldedTitleArea = FoldForSearch(titleArea);
+        var foldedFileName = FoldForSearch(document.FileName);
+        var foldedRelativePath = FoldForSearch(document.RelativePath);
+        var ownershipMatchedTerms = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var term in queryTerms)
         {
-            var occurrenceCount = CountOccurrences(content, term);
+            var occurrenceCount = CountOccurrences(
+                content,
+                foldedContent,
+                term);
 
             if (occurrenceCount > 0)
             {
                 score += 1.0 + Math.Min(occurrenceCount, 5) * 0.25;
+
+                if (term.IsStrongEntity)
+                {
+                    score += StrongEntityMatchBoost;
+                }
             }
 
-            if (ContainsTerm(document.FileName, term))
+            if (ContainsTerm(document.FileName, foldedFileName, term))
             {
                 score += 8.0;
+
+                if (term.IsStrongEntity)
+                {
+                    ownershipMatchedTerms.Add(term.FoldedValue);
+                }
             }
 
-            if (ContainsTerm(document.RelativePath, term))
+            if (ContainsTerm(document.RelativePath, foldedRelativePath, term))
             {
                 score += 8.0;
+
+                if (term.IsStrongEntity)
+                {
+                    ownershipMatchedTerms.Add(term.FoldedValue);
+                }
             }
 
-            if (ContainsTerm(titleArea, term))
+            if (ContainsTerm(titleArea, foldedTitleArea, term))
             {
                 score += 3.0;
+
+                if (term.IsStrongEntity)
+                {
+                    ownershipMatchedTerms.Add(term.FoldedValue);
+                }
             }
         }
 
-        return score;
+        return new SourceMatch(score, ownershipMatchedTerms);
     }
 
-    private static bool ContainsTerm(string value, string term)
+    private static string ExtractTitleArea(string content)
     {
-        return value.Contains(
-            term,
-            StringComparison.OrdinalIgnoreCase);
+        var markdownHeadings = content
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => line.StartsWith('#'))
+            .Take(3)
+            .ToArray();
+
+        if (markdownHeadings.Length > 0)
+        {
+            return string.Join(" ", markdownHeadings);
+        }
+
+        return content[..Math.Min(content.Length, TitleScanLength)];
     }
 
-    private static int CountOccurrences(string content, string term)
+    private static bool ContainsTerm(
+        string value,
+        string foldedValue,
+        SearchTerm term)
+    {
+        return value.Contains(term.Value, StringComparison.OrdinalIgnoreCase) ||
+               foldedValue.Contains(term.FoldedValue, StringComparison.Ordinal);
+    }
+
+    private static int CountOccurrences(
+        string content,
+        string foldedContent,
+        SearchTerm term)
+    {
+        var exactCount = CountOccurrences(
+            content,
+            term.Value,
+            StringComparison.OrdinalIgnoreCase);
+
+        if (term.Value.Equals(term.FoldedValue, StringComparison.Ordinal))
+        {
+            return exactCount;
+        }
+
+        var foldedCount = CountOccurrences(
+            foldedContent,
+            term.FoldedValue,
+            StringComparison.Ordinal);
+
+        return Math.Max(exactCount, foldedCount);
+    }
+
+    private static int CountOccurrences(
+        string content,
+        string term,
+        StringComparison comparison)
     {
         var count = 0;
         var currentIndex = 0;
@@ -172,7 +328,7 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
             var foundIndex = content.IndexOf(
                 term,
                 currentIndex,
-                StringComparison.OrdinalIgnoreCase);
+                comparison);
 
             if (foundIndex < 0)
             {
@@ -188,10 +344,10 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
 
     private static string CreateSnippet(
         string content,
-        IReadOnlyList<string> queryTerms)
+        IReadOnlyList<SearchTerm> queryTerms)
     {
         var firstMatchIndex = queryTerms
-            .Select(term => content.IndexOf(term, StringComparison.OrdinalIgnoreCase))
+            .Select(term => content.IndexOf(term.Value, StringComparison.OrdinalIgnoreCase))
             .Where(index => index >= 0)
             .DefaultIfEmpty(0)
             .Min();
@@ -214,14 +370,65 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
         return snippet;
     }
 
-    private static IReadOnlyList<string> Tokenize(string query)
+    private static IReadOnlyList<SearchTerm> Tokenize(string query)
     {
         return WordRegex()
             .Matches(query)
-            .Select(match => match.Value.Trim().ToLowerInvariant())
-            .Where(term => term.Length >= 2)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(match => CreateSearchTerm(match.Value.Trim()))
+            .Where(term => term.Value.Length >= 2)
+            .Where(term => !StopWords.Contains(term.Value))
+            .Where(term => !StopWords.Contains(term.FoldedValue))
+            .DistinctBy(term => term.FoldedValue)
             .ToArray();
+    }
+
+    private static SearchTerm CreateSearchTerm(string rawValue)
+    {
+        var value = rawValue.ToLowerInvariant();
+        var foldedValue = FoldForSearch(value);
+
+        return new SearchTerm(
+            Value: value,
+            FoldedValue: foldedValue,
+            IsStrongEntity: IsStrongEntityTerm(rawValue, value, foldedValue));
+    }
+
+    private static bool IsStrongEntityTerm(
+        string rawValue,
+        string value,
+        string foldedValue)
+    {
+        return value.Length >= 4 &&
+               foldedValue.Any(char.IsLetter) &&
+               !StopWords.Contains(value) &&
+               !StopWords.Contains(foldedValue);
+    }
+
+    private static string FoldForSearch(string value)
+    {
+        var normalized = value
+            .ToLowerInvariant()
+            .Normalize(NormalizationForm.FormD);
+
+        var builder = new StringBuilder(normalized.Length);
+
+        foreach (var character in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark)
+            {
+                continue;
+            }
+
+            builder.Append(character switch
+            {
+                'I' => 'i',
+                'İ' => 'i',
+                'ı' => 'i',
+                _ => char.ToLowerInvariant(character)
+            });
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormC);
     }
 
     private static string NormalizeWhitespace(string value)
@@ -236,4 +443,17 @@ public sealed partial class ContextSpaceSourceSearchService : IContextSpaceSourc
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
+
+    private sealed record SearchTerm(
+        string Value,
+        string FoldedValue,
+        bool IsStrongEntity);
+
+    private sealed record SourceMatch(
+        double Score,
+        ISet<string> OwnershipMatchedTerms);
+
+    private sealed record ScoredSourceCandidate(
+        ContextSpaceSourceSearchResult Result,
+        ISet<string> OwnershipMatchedTerms);
 }
