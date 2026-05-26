@@ -11,6 +11,7 @@ export type DashboardRoute =
   | { page: 'tools' }
   | { page: 'teams' }
   | { page: 'agent-chat'; agentId: string }
+  | { page: 'team-chat'; teamId: string }
   | { page: 'tool-detail'; toolName: string }
   | { page: 'context-spaces' }
   | { page: 'context-space-detail'; contextSpaceId: string };
@@ -44,8 +45,8 @@ export const dashboardRoutes: DashboardRouteDefinition[] = [
   {
     page: 'teams',
     path: 'teams',
-    title: 'Teams',
-    navLabel: 'Teams',
+    title: 'Agent Teams',
+    navLabel: 'Agent Teams',
     showInNavigation: true,
     component: TeamsPage,
   },
@@ -56,7 +57,7 @@ export const dashboardRoutes: DashboardRouteDefinition[] = [
     navLabel: 'Context Spaces',
     showInNavigation: true,
     component: ContextSpacesPage,
-  }
+  },
 ];
 
 export const defaultDashboardPage: DashboardPage = 'agents';
@@ -121,6 +122,18 @@ export function resolveDashboardRouteFromUrl(
       agentId: decodeURIComponent(segments[1]),
     };
   }
+
+  if (
+  firstSegment === 'teams' &&
+  segments.length === 4 &&
+  segments[2].toLowerCase() === 'chat' &&
+  segments[3].toLowerCase() === 'new'
+) {
+  return {
+    page: 'team-chat',
+    teamId: decodeURIComponent(segments[1]),
+  };
+}
 
   if (firstSegment === 'tools' && segments.length === 2) {
     return {

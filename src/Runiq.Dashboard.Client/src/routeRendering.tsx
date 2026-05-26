@@ -2,6 +2,8 @@ import type { DashboardBreadcrumb } from './layouts/DashboardLayout';
 import { AgentChatPage } from './pages/AgentChatPage';
 import { ContextSpaceDetailPage } from './pages/ContextSpaceDetailPage';
 import { ToolDetailPage } from './pages/ToolDetailPage';
+import { TeamChatPage } from './pages/TeamChatPage';
+
 import {
   getDashboardRouteByPage,
   type DashboardPage,
@@ -15,6 +17,10 @@ export function renderDashboardRoute(route: DashboardRoute) {
 
   if (route.page === 'tool-detail') {
     return <ToolDetailPage toolName={route.toolName} />;
+  }
+
+  if (route.page === 'team-chat') {
+    return <TeamChatPage teamId={route.teamId} />;
   }
 
   if (route.page === 'context-space-detail') {
@@ -35,6 +41,10 @@ export function getActivePage(route: DashboardRoute): DashboardPage {
     return 'tools';
   }
 
+  if (route.page === 'team-chat') {
+    return 'teams';
+  }
+
   if (route.page === 'context-space-detail') {
     return 'context-spaces';
   }
@@ -46,6 +56,10 @@ export function getRouteTitle(route: DashboardRoute): string {
   if (route.page === 'agent-chat') {
     return 'Playground';
   }
+
+  if (route.page === 'team-chat') {
+  return 'Playground';
+}
 
   if (route.page === 'tool-detail') {
     return 'Tool Playground';
@@ -73,6 +87,18 @@ export function getRouteBreadcrumbs(
       },
     ];
   }
+
+  if (route.page === 'team-chat') {
+  return [
+    {
+      label: 'Agent Teams',
+      onClick: () => navigateTo('teams'),
+    },
+    {
+      label: formatRouteDisplayName(route.teamId),
+    },
+  ];
+}
 
   if (route.page === 'tool-detail') {
     return [
