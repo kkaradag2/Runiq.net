@@ -12,6 +12,7 @@ import {
 import './ChatThread.css';
 
 import { ToolCallCard } from './tool/ToolCallCard';
+import { TeamStepCard } from './team/TeamStepCard';
 
 import type {
   AgentChatMessage,
@@ -85,6 +86,8 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
   const hasContext = Boolean(message.context);
   const hasLoadedSkills = Boolean(message.loadedSkills?.length);
   const hasToolCalls = Boolean(message.toolCalls?.length);
+  const hasTeamSteps = Boolean(message.teamSteps?.length);
+
   const hasContent = Boolean(message.content.trim());
   const hasContextSearch = Boolean(message.contextSearchSummary);
   const hasSourceSearchResults = Boolean(message.sourceSearchResults?.length);
@@ -92,14 +95,15 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
   const isAssistantStreaming =
     message.role === 'assistant' && message.isStreaming === true;
 
-  const showInitialThinking =
-    message.role === 'assistant' &&
-    isAssistantStreaming &&
-    !hasContext &&
-    !hasLoadedSkills &&
-    !hasContextSearch &&
-    !hasSourceSearchResults &&
-    !hasToolCalls;
+const showInitialThinking =
+  message.role === 'assistant' &&
+  isAssistantStreaming &&
+  !hasContext &&
+  !hasLoadedSkills &&
+  !hasContextSearch &&
+  !hasSourceSearchResults &&
+  !hasToolCalls &&
+  !hasTeamSteps;
 
   const showContextWaiting =
     message.role === 'assistant' &&
@@ -108,11 +112,12 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
     !hasContent &&
     !hasToolCalls;
 
-  const showToolWaiting =
-    message.role === 'assistant' &&
-    isAssistantStreaming &&
-    !hasContent &&
-    hasToolCalls;
+const showToolWaiting =
+  message.role === 'assistant' &&
+  isAssistantStreaming &&
+  !hasContent &&
+  hasToolCalls &&
+  !hasTeamSteps;
 
   const showCopy =
     message.role === 'assistant' &&
@@ -187,6 +192,14 @@ function ChatMessageItem({ message }: { message: AgentChatMessage }) {
           )}
         </div>
       )}
+
+      {hasTeamSteps && (
+  <div className="mb-4 flex flex-col gap-2">
+    {message.teamSteps?.map((step) => (
+      <TeamStepCard key={step.id} step={step} />
+    ))}
+  </div>
+)}
 
       {hasToolCalls && (
         <div className="mb-4 flex flex-col gap-2">
