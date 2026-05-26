@@ -3,14 +3,18 @@ using Runiq.Agents.Providers.OpenAI;
 using Runiq.Agents.Runtime;
 using Runiq.Agents.Tools;
 using Runiq.Agents.Validation;
+using Runiq.ContextSpaces.Models.Sources;
+using Runiq.ContextSpaces.Services;
 using Runiq.Core.Agents;
 using Runiq.Core.Configuration;
 using Runiq.Core.ContextSpaces;
 using Runiq.Core.Metadata;
+using Runiq.Core.Teams;
 using Runiq.Core.Tools;
 using Runiq.Core.Validation;
-using Runiq.ContextSpaces.Services;
-using Runiq.ContextSpaces.Models.Sources;
+using Runiq.Teams.Execution;
+using Runiq.Teams.Execution.Planning;
+using Runiq.Teams.Models.Teams;
 
 namespace Runiq.Core;
 
@@ -35,9 +39,20 @@ public static class RuniqServerServiceCollectionExtensions
         services.AddHttpClient<OpenAICompatibleClient>();
         services.AddSingleton<AgentToolInvoker>();
 
+        // Tools
         services.AddScoped<ToolRunApiHandler>();
         services.AddScoped<AgentExecutionRuntime>();
         services.AddScoped<AgentChatApiHandler>();
+
+        // Agent Teams 
+        services.AddScoped<SequentialTeamExecutionPlanner>();
+        services.AddScoped<AdaptiveTeamExecutionPlanner>();
+        services.AddScoped<ITeamPlanningModelClient, AgentRuntimeTeamPlanningModelClient>();
+        services.AddScoped<ITeamExecutionPlannerResolver, TeamExecutionPlannerResolver>();
+        services.AddScoped<TeamExecutionRuntime>();
+        services.AddScoped<TeamChatApiHandler>();
+
+        // Source context
         services.AddScoped<ContextSpaceSourceDocumentApiHandler>();
         services.AddScoped<ContextSpaceSkillDocumentApiHandler>();
 
@@ -63,6 +78,9 @@ public static class RuniqServerServiceCollectionExtensions
 
         services.AddSingleton<IReadOnlyList<ContextSpace>>(
             options.ContextSpaces.ToArray());
+
+        services.AddSingleton<IReadOnlyList<AgentTeam>>(
+            options.Teams.ToArray());
 
         services.AddSingleton<IReadOnlyList<AgentToolRegistration>>(
             BuildRegisteredToolRegistry(options));

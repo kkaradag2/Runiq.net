@@ -104,6 +104,20 @@ export type ToolRunResponse = {
   errorMessage?: string | null;
 };
 
+export type TeamMemberMetadata = {
+  agentId: string;
+  role: string;
+  instructions?: string | null;
+};
+
+export type TeamMetadata = {
+  id: string;
+  name: string;
+  instructions: string;
+  executionMode: string;
+  members: TeamMemberMetadata[];
+};
+
 export async function runTool(
   basePath: string,
   toolName: string,
@@ -159,4 +173,15 @@ export async function getContextSpaces(
   }
 
   return response.json() as Promise<ContextSpaceMetadata[]>;
+}
+
+
+export async function getTeams(basePath: string): Promise<TeamMetadata[]> {
+  const response = await fetch(`${basePath}/metadata/teams`);
+
+  if (!response.ok) {
+    throw new Error('Teams metadata could not be loaded.');
+  }
+
+  return response.json() as Promise<TeamMetadata[]>;
 }

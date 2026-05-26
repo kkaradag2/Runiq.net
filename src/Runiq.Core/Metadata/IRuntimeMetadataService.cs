@@ -1,4 +1,6 @@
-﻿namespace Runiq.Core.Metadata;
+﻿using Runiq.Core.Teams;
+
+namespace Runiq.Core.Metadata;
 
 /// <summary>
 /// Dashboard tarafından kullanılacak runtime metadata bilgilerini sağlar.
@@ -19,4 +21,9 @@ public interface IRuntimeMetadataService
     /// Host uygulamada register edilmiş context space listesini döndürür.
     /// </summary>
     IReadOnlyList<ContextSpaceMetadataDto> GetContextSpaces();
+
+    /// <summary>
+    /// Host uygulamada register edilmiş agent team listesini döndürür.
+    /// </summary>
+    IReadOnlyList<TeamMetadataDto> GetTeams();
 }
