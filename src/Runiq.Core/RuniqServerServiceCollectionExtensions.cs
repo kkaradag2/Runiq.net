@@ -11,6 +11,7 @@ using Runiq.Core.Tools;
 using Runiq.Core.Validation;
 using Runiq.ContextSpaces.Services;
 using Runiq.ContextSpaces.Models.Sources;
+using Runiq.Teams.Models.Teams;
 
 namespace Runiq.Core;
 
@@ -63,6 +64,9 @@ public static class RuniqServerServiceCollectionExtensions
 
         services.AddSingleton<IReadOnlyList<ContextSpace>>(
             options.ContextSpaces.ToArray());
+
+        services.AddSingleton<IReadOnlyList<AgentTeam>>(
+            options.Teams.ToArray());
 
         services.AddSingleton<IReadOnlyList<AgentToolRegistration>>(
             BuildRegisteredToolRegistry(options));

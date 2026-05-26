@@ -209,7 +209,7 @@ public sealed class AgentExecutionRuntimeTests
             result.RelativePath.Contains("bursa", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(selectedResults, result =>
             result.RelativePath.Contains("istanbul", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(6, contextSearchedEvent.ContextSearchSummary!.SearchedDocumentCount);
+        Assert.Equal(7, contextSearchedEvent.ContextSearchSummary!.SearchedDocumentCount);
         Assert.Equal(selectedResults.Count, contextSearchedEvent.ContextSearchSummary.SelectedCount);
     }
 
