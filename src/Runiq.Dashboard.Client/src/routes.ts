@@ -1,15 +1,15 @@
 import type { ComponentType } from 'react';
 import { AgentsPage } from './pages/AgentsPage';
 import { ToolsPage } from './pages/ToolsPage';
-import { WorkflowsPage } from './pages/WorkflowsPage';
 import { ContextSpacesPage } from './pages/ContextSpacesPage';
+import { TeamsPage } from './pages/TeamsPage';
 
-export type DashboardPage = 'agents' | 'tools' | 'context-spaces' | 'workflows';
+export type DashboardPage = 'agents' | 'tools' | 'teams' | 'context-spaces';
 
 export type DashboardRoute =
   | { page: 'agents' }
   | { page: 'tools' }
-  | { page: 'workflows' }
+  | { page: 'teams' }
   | { page: 'agent-chat'; agentId: string }
   | { page: 'tool-detail'; toolName: string }
   | { page: 'context-spaces' }
@@ -42,21 +42,21 @@ export const dashboardRoutes: DashboardRouteDefinition[] = [
     component: ToolsPage,
   },
   {
+    page: 'teams',
+    path: 'teams',
+    title: 'Teams',
+    navLabel: 'Teams',
+    showInNavigation: true,
+    component: TeamsPage,
+  },
+  {
     page: 'context-spaces',
     path: 'context-spaces',
     title: 'Context Spaces',
     navLabel: 'Context Spaces',
     showInNavigation: true,
     component: ContextSpacesPage,
-  },
-  {
-    page: 'workflows',
-    path: 'workflows',
-    title: 'Workflows',
-    navLabel: 'Workflows',
-    showInNavigation: true,
-    component: WorkflowsPage,
-  },
+  }
 ];
 
 export const defaultDashboardPage: DashboardPage = 'agents';
@@ -137,20 +137,22 @@ export function resolveDashboardRouteFromUrl(
     return { page: 'tools' };
   }
 
-if (firstSegment === 'context-spaces') {
-  if (segments[1]) {
-    return {
-      page: 'context-space-detail',
-      contextSpaceId: decodeURIComponent(segments[1]),
-    };
-  }
-
-  return { page: 'context-spaces' };
+  if (firstSegment === 'teams') {
+  return { page: 'teams' };
 }
 
-  if (firstSegment === 'workflows') {
-    return { page: 'workflows' };
+  if (firstSegment === 'context-spaces') {
+    if (segments[1]) {
+      return {
+        page: 'context-space-detail',
+        contextSpaceId: decodeURIComponent(segments[1]),
+      };
+    }
+
+    return { page: 'context-spaces' };
   }
+
+
 
   return { page: defaultDashboardPage };
 }
