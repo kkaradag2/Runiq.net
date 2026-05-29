@@ -1,5 +1,7 @@
 # Runiq.Agents
 
+![NuGet Version](https://img.shields.io/nuget/vpre/Runiq.Agents?label=nuget)
+
 Agent runtime, tool execution, provider integration, and streaming primitives for Runiq.Net.
 
 `Runiq.Agents` contains the core code-first agent model used by the Runiq runtime. Use it to define agents, attach strongly typed tools, configure model providers, and consume structured execution results or streaming execution events.
@@ -7,7 +9,7 @@ Agent runtime, tool execution, provider integration, and streaming primitives fo
 ## Install
 
 ```powershell
-dotnet add package Runiq.Agents --version 0.1.0-preview.1
+dotnet add package Runiq.Agents --prerelease
 ```
 
 ## Basic Agent

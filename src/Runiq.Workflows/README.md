@@ -1,5 +1,7 @@
 # Runiq.Workflows
 
+![NuGet Version](https://img.shields.io/nuget/vpre/Runiq.Workflows?label=nuget)
+
 Workflow orchestration primitives for Runiq.Net runtime and dashboard scenarios.
 
 `Runiq.Workflows` lets you compose agents into code-first flows. It provides flow definitions, step builders, execution result models, validation primitives, and service registration for dashboard-visible workflow execution.
@@ -7,7 +9,7 @@ Workflow orchestration primitives for Runiq.Net runtime and dashboard scenarios.
 ## Install
 
 ```powershell
-dotnet add package Runiq.Workflows --version 0.1.0-preview.1
+dotnet add package Runiq.Workflows --prerelease
 ```
 
 ## Basic Workflow

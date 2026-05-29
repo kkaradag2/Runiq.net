@@ -1,5 +1,7 @@
 # Runiq.ContextSpaces
 
+![NuGet Version](https://img.shields.io/nuget/vpre/Runiq.ContextSpaces?label=nuget)
+
 Context and source reading primitives for Runiq.Net agents.
 
 `Runiq.ContextSpaces` provides the building blocks for attaching read-only context to agents. Use it to define context spaces, register source providers, discover skill documents, and preview supported source content through the Runiq runtime and dashboard.
@@ -7,7 +9,7 @@ Context and source reading primitives for Runiq.Net agents.
 ## Install
 
 ```powershell
-dotnet add package Runiq.ContextSpaces --version 0.1.0-preview.1
+dotnet add package Runiq.ContextSpaces --prerelease
 ```
 
 ## Basic Context Space

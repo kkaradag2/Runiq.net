@@ -1,5 +1,7 @@
 # Runiq.Core
 
+![NuGet Version](https://img.shields.io/nuget/vpre/Runiq.Core?label=nuget)
+
 Embedded ASP.NET Core runtime and dashboard hosting layer for Runiq.Net agents.
 
 `Runiq.Core` wires Runiq into ASP.NET Core applications. It provides service registration, runtime endpoints, dashboard hosting, agent metadata endpoints, context browsing endpoints, and workflow dashboard endpoints.
@@ -7,7 +9,7 @@ Embedded ASP.NET Core runtime and dashboard hosting layer for Runiq.Net agents.
 ## Install
 
 ```powershell
-dotnet add package Runiq.Core --version 0.1.0-preview.1
+dotnet add package Runiq.Core --prerelease
 ```
 
 ## Quickstart

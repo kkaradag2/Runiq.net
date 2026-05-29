@@ -25,10 +25,10 @@ It gives ASP.NET Core teams a native way to define AI agents in C#, attach stron
 Install the packages you need:
 
 ```powershell
-dotnet add package Runiq.Core --version 0.1.0-preview.1
-dotnet add package Runiq.Agents --version 0.1.0-preview.1
-dotnet add package Runiq.ContextSpaces --version 0.1.0-preview.1
-dotnet add package Runiq.Workflows --version 0.1.0-preview.1
+dotnet add package Runiq.Core --prerelease
+dotnet add package Runiq.Agents --prerelease
+dotnet add package Runiq.ContextSpaces --prerelease
+dotnet add package Runiq.Workflows --prerelease
 ```
 
 For most ASP.NET Core applications, start with `Runiq.Core`; it references the runtime pieces needed to host agents and the dashboard.
@@ -105,7 +105,7 @@ Full documentation, guides, and examples are available at [runiq.net/docs](https
 
 ## Repository
 
-Source code and issue tracking are available on [GitHub](https://github.com/kkaradag2/Runiq.Net).
+Source code and issue tracking are available on [GitHub](https://github.com/runiq-net/Runiq.net).
 
 ## License
 
