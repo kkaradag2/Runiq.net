@@ -15,8 +15,14 @@
     <PackageTags>ai;agents;workflows;orchestration;dotnet;runiq</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
+    <PackageIcon>runiq-icon.png</PackageIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\assets\nuget\runiq-icon.png" Pack="true" PackagePath="runiq-icon.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Runiq.Agent\Runiq.Agents.csproj" />
