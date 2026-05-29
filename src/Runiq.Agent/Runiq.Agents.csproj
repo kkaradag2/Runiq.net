@@ -7,7 +7,8 @@
 
     <IsPackable>true</IsPackable>
     <PackageId>Runiq.Agents</PackageId>
-    <Version>0.1.0-alpha.1</Version>
+  <Version>0.1.0-preview.1</Version>
+<GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Title>Runiq Agents</Title>
     <Description>Core agent runtime for building AI agents and typed tools in .NET applications.</Description>
     <PackageTags>ai;agents;tools;dotnet;openai;llm</PackageTags>
