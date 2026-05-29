@@ -1,8 +1,8 @@
 # Runiq.Net
 
-[![CI](https://github.com/kkaradag2/Runiq.Net/actions/workflows/ci.yml/badge.svg)](https://github.com/kkaradag2/Runiq.Net/actions/workflows/ci.yml)
+[![CI](https://github.com/runiq-net/Runiq.net/actions/workflows/ci.yml/badge.svg)](https://github.com/runiq-net/Runiq.net/actions/workflows/ci.yml)
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
-![Version](https://img.shields.io/badge/version-0.1.0--preview.1-orange)
+![NuGet Version](https://img.shields.io/nuget/vpre/Runiq.Core?label=nuget)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 Runiq.Net is a code-first agent runtime for .NET applications.
